@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Simple Cash Book</title>
+  <link rel="manifest" href="/tools/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      background: #f5f5f5;
+      color: #1A1A1A;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app-container {
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      background: transparent;
+      border-radius: 0;
+      overflow: visible;
+    }
+
+    /* Header - title centered */
+    .header {
+      background: transparent;
+      padding: 8px 0 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-bottom: none;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: #1A1A1A;
+      text-align: center;
+    }
+    .back-btn {
+      background: white;
+      border: none;
+      font-size: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      color: #1A1A1A;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      position: absolute;
+      left: 0;
+      top: 4px;
+    }
+    .back-btn:active {
+      background: #f0f0f0;
+      transform: scale(0.96);
+    }
+
+    .view {
+      padding: 0 0 32px 0;
+      display: none;
+      animation: fadeInUp 0.3s ease;
+    }
+    .active-view { display: block; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Center content */
+    .center-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 32px;
+      padding: 32px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      width: 100%;
+      text-align: center;
+    }
+
+    .card label {
+      display: block;
+      text-align: left;
+      font-weight: 510;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+    .card input {
+      text-align: left;
+    }
+
+    /* Dashboard buttons */
+    .dashboard-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .btn-large {
+      background: white;
+      border: none;
+      padding: 22px 20px;
+      border-radius: 28px;
+      font-size: 20px;
+      font-weight: 590;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #1A1A1A;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0, 0, 0, 0.03);
+      letter-spacing: -0.2px;
+    }
+    .btn-large:active {
+      background: #f9f9f9;
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: #00D09C;
+      border: none;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 17px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    .btn-primary:active {
+      background: #00b888;
+      transform: scale(0.97);
+    }
+    .btn-secondary {
+      background: #f2f2f2;
+      color: #1A1A1A;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-secondary:active {
+      background: #e5e5e5;
+      transform: scale(0.96);
+    }
+
+    /* Language buttons row */
+    .lang-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .lang-btn {
+      background: white;
+      border: 1px solid #eaeaea;
+      padding: 14px 28px;
+      border-radius: 60px;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+      color: #1A1A1A;
+    }
+    .lang-btn:active {
+      background: #f0f0f0;
+      transform: scale(0.96);
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 16px 20px;
+      border-radius: 28px;
+      border: 1px solid #eaeaea;
+      background: white;
+      font-size: 16px;
+      margin-bottom: 20px;
+      font-family: inherit;
+    }
+    input:focus {
+      outline: none;
+      border-color: #00D09C;
+      box-shadow: 0 0 0 4px rgba(0, 208, 156, 0.1);
+    }
+
+    /* Payment mode buttons (instead of radio) */
+    .mode-buttons {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .mode-btn {
+      flex: 1;
+      background: #f2f2f2;
+      border: none;
+      padding: 14px 12px;
+      border-radius: 60px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .mode-btn.active {
+      background: #00D09C;
+      color: white;
+    }
+    .mode-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Summary card */
+    .summary-card {
+      background: white;
+      border-radius: 32px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    }
+    .balance-number {
+      font-size: 48px;
+      font-weight: 700;
+      color: #1A1A1A;
+      letter-spacing: -1px;
+      margin: 12px 0;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+      font-weight: 500;
+      font-size: 15px;
+      color: #444;
+    }
+
+    /* Transaction list */
+    .txn-list {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    .txn-item {
+      background: white;
+      border-radius: 24px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .txn-item:active {
+      background: #fefefe;
+      transform: scale(0.99);
+    }
+    .txn-left {
+      flex: 2;
+      min-width: 150px;
+    }
+    .txn-name {
+      font-weight: 600;
+      font-size: 17px;
+      color: #1A1A1A;
+      margin-bottom: 6px;
+      letter-spacing: -0.2px;
+    }
+    .txn-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 13px;
+      color: #888;
+    }
+    .txn-amount {
+      font-size: 22px;
+      font-weight: 650;
+      text-align: right;
+      flex-shrink: 0;
+      letter-spacing: -0.3px;
+    }
+    .txn-amount.in { color: #00D09C; }
+    .txn-amount.out { color: #FF6B4A; }
+
+    .title-section {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: #1A1A1A;
+      letter-spacing: -0.3px;
+    }
+
+    /* Welcome card (dashboard) */
+    .welcome-card {
+      background: white;
+      border-radius: 32px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    }
+    .welcome-text {
+      font-size: 20px;
+      font-weight: 500;
+      color: #1A1A1A;
+      letter-spacing: -0.3px;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background: white;
+      max-width: 90%;
+      width: 400px;
+      border-radius: 40px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+    .modal-card h3 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+    .modal-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .modal-detail-item {
+      font-size: 16px;
+    }
+    .modal-detail-item strong {
+      color: #00D09C;
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .modal-detail-item span {
+      font-weight: 600;
+      color: #1A1A1A;
+      word-break: break-word;
+    }
+    .modal-reason {
+      grid-column: span 2;
+      margin-top: 8px;
+      text-align: left;
+    }
+    .modal-reason strong {
+      color: #00D09C;
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .modal-reason span {
+      font-size: 16px;
+      color: #1A1A1A;
+      word-break: break-word;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .modal-buttons button {
+      flex: 1;
+      padding: 14px 0;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+    }
+    .modal-buttons .btn-close {
+      background: #f2f2f2;
+      color: #1A1A1A;
+    }
+    .modal-buttons .btn-delete {
+      background: #FF6B4A;
+      color: white;
+    }
+
+    /* Custom confirm dialog */
+    .confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      backdrop-filter: blur(4px);
+    }
+    .confirm-card {
+      background: white;
+      max-width: 90%;
+      width: 320px;
+      border-radius: 40px;
+      padding: 28px;
+      text-align: center;
+    }
+    .confirm-card p {
+      font-size: 18px;
+      margin: 20px 0;
+    }
+    .confirm-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    .confirm-buttons button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 60px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1A1A1A;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 60px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: #aaa;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <button class="back-btn" id="globalBackBtn" style="display: none;">←</button>
+    <h1 id="appTitle">Simple Cash Book</h1>
+  </div>
+
+  <!-- LANGUAGE SELECTION SCREEN -->
+  <div id="langView" class="view center-screen">
+    <div class="card">
+      <div style="font-size: 48px; margin-bottom: 16px;">😊</div>
+      <div id="langWelcomeMsg" style="font-size: 20px; font-weight: 500; margin-bottom: 20px;">Please Select Your Language</div>
+      <div class="lang-row">
+        <button class="lang-btn" data-lang="mr">मराठी</button>
+        <button class="lang-btn" data-lang="hi">हिंदी</button>
+        <button class="lang-btn" data-lang="en">English</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WELCOME / NAME ENTRY (centered) -->
+  <div id="welcomeView" class="view center-screen">
+    <div class="card">
+      <label id="nameLabel">Enter your name</label>
+      <input type="text" id="userNameInput" placeholder="e.g., Deepak Kumar" autocomplete="off">
+      <button class="btn-primary" id="continueBtn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboardView" class="view">
+    <div class="welcome-card" id="welcomeCard">
+      <div class="welcome-text" id="welcomeMessage">Welcome 💌</div>
+    </div>
+    <div class="dashboard-buttons">
+      <button class="btn-large" id="seeDetailsBtn">📊 <span id="dashSeeDetails">See Details</span></button>
+      <button class="btn-large" id="paymentInBtn">💰 <span id="dashPaymentIn">Payment In</span></button>
+      <button class="btn-large" id="paymentOutBtn">💸 <span id="dashPaymentOut">Payment Out</span></button>
+    </div>
+  </div>
+
+  <!-- PAYMENT IN -->
+  <div id="paymentInView" class="view">
+    <div class="card">
+      <label id="inDateLabel">Date</label>
+      <input type="date" id="inDate">
+      <label id="inNameLabel">Name</label>
+      <input type="text" id="inName" placeholder="Person or entity">
+      <label id="inAmountLabel">Amount (₹)</label>
+      <input type="number" id="inAmount" step="0.01" min="0.01">
+      <label id="inReasonLabel">Reason (optional)</label>
+      <input type="text" id="inReason" placeholder="Reason for payment">
+      <label id="inModeLabel">Payment Mode</label>
+      <div class="mode-buttons" id="inModeButtons">
+        <button type="button" class="mode-btn" data-mode="Cash">💵 Cash</button>
+        <button type="button" class="mode-btn" data-mode="Online">🌐 Online</button>
+      </div>
+      <button class="btn-primary" id="saveInBtn">Save Payment In</button>
+    </div>
+  </div>
+
+  <!-- PAYMENT OUT -->
+  <div id="paymentOutView" class="view">
+    <div class="card">
+      <label id="outDateLabel">Date</label>
+      <input type="date" id="outDate">
+      <label id="outNameLabel">Name</label>
+      <input type="text" id="outName" placeholder="Person or entity">
+      <label id="outAmountLabel">Amount (₹)</label>
+      <input type="number" id="outAmount" step="0.01" min="0.01">
+      <label id="outReasonLabel">Reason (optional)</label>
+      <input type="text" id="outReason" placeholder="Reason for payment">
+      <label id="outModeLabel">Payment Mode</label>
+      <div class="mode-buttons" id="outModeButtons">
+        <button type="button" class="mode-btn" data-mode="Cash">💵 Cash</button>
+        <button type="button" class="mode-btn" data-mode="Online">🌐 Online</button>
+      </div>
+      <button class="btn-primary" id="saveOutBtn">Save Payment Out</button>
+    </div>
+  </div>
+
+  <!-- DETAILS VIEW -->
+  <div id="detailsView" class="view">
+    <div class="summary-card">
+      <div id="availableBalanceLabel" style="font-weight: 500; font-size: 14px; color: #666;">Available Balance</div>
+      <div class="balance-number" id="balanceAmount">₹0</div>
+      <div class="total-row"><span id="totalInLabel">Total In</span><span id="totalInSpan">₹0</span></div>
+      <div class="total-row"><span id="totalOutLabel">Total Out</span><span id="totalOutSpan">₹0</span></div>
+    </div>
+
+    <div class="flex-row">
+      <input type="text" id="searchInput" placeholder="🔍 Search by name or reason..." style="margin-bottom:0; flex:1;">
+      <button class="btn-secondary" id="exportDataBtn">Export</button>
+      <button class="btn-secondary" id="importDataBtn">Import</button>
+    </div>
+    <div class="flex-row">
+      <button class="btn-secondary" id="backupFullBtn">Backup</button>
+      <button class="btn-secondary" id="restoreFullBtn">Restore</button>
+    </div>
+    <p style="font-size: 12px; margin-bottom: 20px; color: #888;">Backup includes all data | Restore merges without duplicates</p>
+
+    <div class="title-section" id="transactionsTitle">Transactions</div>
+    <div id="transactionListContainer" class="txn-list">
+      <div class="empty-state">✨ No transactions yet</div>
+    </div>
+    <div class="total-row" style="margin-top: 18px; font-weight: 600; border-top: 1px solid #eee; padding-top: 16px;">
+      <span id="totalInListLabel">Total In</span><span id="listTotalIn">₹0</span>
+      <span id="totalOutListLabel">Total Out</span><span id="listTotalOut">₹0</span>
+    </div>
+  </div>
+</div>
+
+<div id="toastMsg" class="toast"></div>
+<div id="modal" class="modal">
+  <div class="modal-card">
+    <h3 id="modalTitle">Transaction</h3>
+    <div id="modalContent"></div>
+    <div class="modal-buttons">
+      <button class="btn-close" id="modalCloseBtn">Close</button>
+      <button class="btn-delete" id="modalDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Confirm Dialog -->
+<div id="customConfirm" class="confirm-modal">
+  <div class="confirm-card">
+    <p id="confirmMessage">Are you sure?</p>
+    <div class="confirm-buttons">
+      <button id="confirmCancel" class="btn-secondary" style="flex:1;">Cancel</button>
+      <button id="confirmOk" class="btn-primary" style="flex:1;">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- TRANSLATIONS ----------
+  const translations = {
+    en: {
+      welcomeLang: "Please Select Your Language",
+      nameLabel: "Enter your name",
+      continue: "Continue →",
+      dashWelcome: "Welcome",
+      dashSeeDetails: "See Details",
+      dashPaymentIn: "Payment In",
+      dashPaymentOut: "Payment Out",
+      inDate: "Date",
+      inName: "Name",
+      inAmount: "Amount (₹)",
+      inReason: "Reason (optional)",
+      inMode: "Payment Mode",
+      saveIn: "Save Payment In",
+      outDate: "Date",
+      outName: "Name",
+      outAmount: "Amount (₹)",
+      outReason: "Reason (optional)",
+      outMode: "Payment Mode",
+      saveOut: "Save Payment Out",
+      availableBalance: "Available Balance",
+      totalIn: "Total In",
+      totalOut: "Total Out",
+      transactions: "Transactions",
+      searchPlaceholder: "🔍 Search by name or reason...",
+      exportBtn: "Export",
+      importBtn: "Import",
+      backupBtn: "Backup",
+      restoreBtn: "Restore",
+      backupInfo: "Backup includes all data | Restore merges without duplicates",
+      deleteConfirm: "Delete this transaction?",
+      transaction: "Transaction",
+      close: "Close",
+      delete: "Delete",
+      saved: "saved",
+      deleted: "Deleted",
+      nameRequired: "Name is required",
+      amountPositive: "Amount must be > 0",
+      saveFailed: "Save failed",
+      exportSuccess: "Exported",
+      importReplace: "Replace all existing transactions?",
+      importSuccess: "Import successful",
+      invalidJSON: "Invalid JSON",
+      backupCreated: "Backup created",
+      restoreMerge: "Restore backup (merge with existing)?",
+      restored: "Restored",
+      invalidBackup: "Invalid backup file"
+    },
+    hi: {
+      welcomeLang: "कृपया अपनी भाषा चुनें",
+      nameLabel: "अपना नाम दर्ज करें",
+      continue: "जारी रखें →",
+      dashWelcome: "स्वागत है",
+      dashSeeDetails: "विवरण देखें",
+      dashPaymentIn: "भुगतान प्राप्त",
+      dashPaymentOut: "भुगतान भेजा",
+      inDate: "तारीख",
+      inName: "नाम",
+      inAmount: "राशि (₹)",
+      inReason: "कारण (वैकल्पिक)",
+      inMode: "भुगतान मोड",
+      saveIn: "भुगतान प्राप्त सहेजें",
+      outDate: "तारीख",
+      outName: "नाम",
+      outAmount: "राशि (₹)",
+      outReason: "कारण (वैकल्पिक)",
+      outMode: "भुगतान मोड",
+      saveOut: "भुगतान भेजा सहेजें",
+      availableBalance: "उपलब्ध शेष",
+      totalIn: "कुल प्राप्त",
+      totalOut: "कुल भेजा",
+      transactions: "लेन-देन",
+      searchPlaceholder: "🔍 नाम या कारण से खोजें...",
+      exportBtn: "निर्यात",
+      importBtn: "आयात",
+      backupBtn: "बैकअप",
+      restoreBtn: "पुनर्स्थापना",
+      backupInfo: "बैकअप में सभी डेटा शामिल है | पुनर्स्थापना डुप्लिकेट के बिना मर्ज करती है",
+      deleteConfirm: "यह लेन-देन हटाएं?",
+      transaction: "लेन-देन",
+      close: "बंद करें",
+      delete: "हटाएं",
+      saved: "सहेजा गया",
+      deleted: "हटा दिया गया",
+      nameRequired: "नाम आवश्यक है",
+      amountPositive: "राशि > 0 होनी चाहिए",
+      saveFailed: "सहेजना विफल",
+      exportSuccess: "निर्यात किया गया",
+      importReplace: "सभी मौजूदा लेन-देन बदलें?",
+      importSuccess: "आयात सफल",
+      invalidJSON: "अमान्य JSON",
+      backupCreated: "बैकअप बनाया गया",
+      restoreMerge: "बैकअप पुनर्स्थापित करें (मौजूदा के साथ मर्ज)?",
+      restored: "पुनर्स्थापित किया गया",
+      invalidBackup: "अमान्य बैकअप फ़ाइल"
+    },
+    mr: {
+      welcomeLang: "कृपया आपली भाषा निवडा",
+      nameLabel: "आपले नाव प्रविष्ट करा",
+      continue: "पुढे जा →",
+      dashWelcome: "स्वागत आहे",
+      dashSeeDetails: "तपशील पहा",
+      dashPaymentIn: "पेमेंट प्राप्त",
+      dashPaymentOut: "पेमेंट पाठवा",
+      inDate: "तारीख",
+      inName: "नाव",
+      inAmount: "रक्कम (₹)",
+      inReason: "कारण (पर्यायी)",
+      inMode: "पेमेंट मोड",
+      saveIn: "पेमेंट प्राप्त जतन करा",
+      outDate: "तारीख",
+      outName: "नाव",
+      outAmount: "रक्कम (₹)",
+      outReason: "कारण (पर्यायी)",
+      outMode: "पेमेंट मोड",
+      saveOut: "पेमेंट पाठवा जतन करा",
+      availableBalance: "उपलब्ध शिल्लक",
+      totalIn: "एकूण प्राप्त",
+      totalOut: "एकूण पाठवा",
+      transactions: "व्यवहार",
+      searchPlaceholder: "🔍 नाव किंवा कारणाने शोधा...",
+      exportBtn: "निर्यात",
+      importBtn: "आयात",
+      backupBtn: "बॅकअप",
+      restoreBtn: "पुनर्संचयित करा",
+      backupInfo: "बॅकअपमध्ये सर्व डेटा समाविष्ट आहे | पुनर्संचयित डुप्लिकेटशिवाय विलीन करते",
+      deleteConfirm: "हा व्यवहार हटवायचा?",
+      transaction: "व्यवहार",
+      close: "बंद करा",
+      delete: "हटवा",
+      saved: "जतन केले",
+      deleted: "हटविले",
+      nameRequired: "नाव आवश्यक आहे",
+      amountPositive: "रक्कम > 0 असावी",
+      saveFailed: "जतन करण्यात अयशस्वी",
+      exportSuccess: "निर्यात केले",
+      importReplace: "सर्व विद्यमान व्यवहार बदलायचे?",
+      importSuccess: "आयात यशस्वी",
+      invalidJSON: "अवैध JSON",
+      backupCreated: "बॅकअप तयार केला",
+      restoreMerge: "बॅकअप पुनर्संचयित करा (विद्यमान सह विलीन)?",
+      restored: "पुनर्संचयित केले",
+      invalidBackup: "अवैध बॅकअप फाइल"
+    }
+  };
+
+  let currentLang = 'en';
+  let t = translations.en;
+
+  function setLanguage(lang) {
+    currentLang = lang;
+    t = translations[lang];
+    // Update UI elements with ids
+    if (document.getElementById('langWelcomeMsg')) document.getElementById('langWelcomeMsg').innerText = t.welcomeLang;
+    if (document.getElementById('nameLabel')) document.getElementById('nameLabel').innerText = t.nameLabel;
+    if (document.getElementById('continueBtn')) document.getElementById('continueBtn').innerText = t.continue;
+    if (document.getElementById('dashSeeDetails')) document.getElementById('dashSeeDetails').innerText = t.dashSeeDetails;
+    if (document.getElementById('dashPaymentIn')) document.getElementById('dashPaymentIn').innerText = t.dashPaymentIn;
+    if (document.getElementById('dashPaymentOut')) document.getElementById('dashPaymentOut').innerText = t.dashPaymentOut;
+    if (document.getElementById('inDateLabel')) document.getElementById('inDateLabel').innerText = t.inDate;
+    if (document.getElementById('inNameLabel')) document.getElementById('inNameLabel').innerText = t.inName;
+    if (document.getElementById('inAmountLabel')) document.getElementById('inAmountLabel').innerText = t.inAmount;
+    if (document.getElementById('inReasonLabel')) document.getElementById('inReasonLabel').innerText = t.inReason;
+    if (document.getElementById('inModeLabel')) document.getElementById('inModeLabel').innerText = t.inMode;
+    if (document.getElementById('saveInBtn')) document.getElementById('saveInBtn').innerText = t.saveIn;
+    if (document.getElementById('outDateLabel')) document.getElementById('outDateLabel').innerText = t.outDate;
+    if (document.getElementById('outNameLabel')) document.getElementById('outNameLabel').innerText = t.outName;
+    if (document.getElementById('outAmountLabel')) document.getElementById('outAmountLabel').innerText = t.outAmount;
+    if (document.getElementById('outReasonLabel')) document.getElementById('outReasonLabel').innerText = t.outReason;
+    if (document.getElementById('outModeLabel')) document.getElementById('outModeLabel').innerText = t.outMode;
+    if (document.getElementById('saveOutBtn')) document.getElementById('saveOutBtn').innerText = t.saveOut;
+    if (document.getElementById('availableBalanceLabel')) document.getElementById('availableBalanceLabel').innerText = t.availableBalance;
+    if (document.getElementById('totalInLabel')) document.getElementById('totalInLabel').innerText = t.totalIn;
+    if (document.getElementById('totalOutLabel')) document.getElementById('totalOutLabel').innerText = t.totalOut;
+    if (document.getElementById('transactionsTitle')) document.getElementById('transactionsTitle').innerText = t.transactions;
+    if (document.getElementById('searchInput')) document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+    if (document.getElementById('exportDataBtn')) document.getElementById('exportDataBtn').innerText = t.exportBtn;
+    if (document.getElementById('importDataBtn')) document.getElementById('importDataBtn').innerText = t.importBtn;
+    if (document.getElementById('backupFullBtn')) document.getElementById('backupFullBtn').innerText = t.backupBtn;
+    if (document.getElementById('restoreFullBtn')) document.getElementById('restoreFullBtn').innerText = t.restoreBtn;
+    if (document.getElementById('totalInListLabel')) document.getElementById('totalInListLabel').innerText = t.totalIn;
+    if (document.getElementById('totalOutListLabel')) document.getElementById('totalOutListLabel').innerText = t.totalOut;
+    if (document.getElementById('modalTitle')) document.getElementById('modalTitle').innerText = t.transaction;
+    if (document.getElementById('modalCloseBtn')) document.getElementById('modalCloseBtn').innerText = t.close;
+    if (document.getElementById('modalDeleteBtn')) document.getElementById('modalDeleteBtn').innerText = t.delete;
+  }
+
+  // ---------- IndexedDB ----------
+  const DB_NAME = 'CashBookData';
+  const STORE_TX = 'transactions';
+  const STORE_SETTINGS = 'appSettings';
+  let db = null;
+  let dbInitPromise = null;
+
+  function openDB() {
+    if (dbInitPromise) return dbInitPromise;
+    dbInitPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 5);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => { db = request.result; resolve(db); };
+      request.onupgradeneeded = (e) => {
+        const dbRef = e.target.result;
+        if (!dbRef.objectStoreNames.contains(STORE_TX)) {
+          dbRef.createObjectStore(STORE_TX, { keyPath: 'id' });
+        }
+        if (!dbRef.objectStoreNames.contains(STORE_SETTINGS)) {
+          dbRef.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
+        }
+      };
+    });
+    return dbInitPromise;
+  }
+
+  async function getSetting(key) {
+    await openDB();
+    const tx = db.transaction(STORE_SETTINGS, 'readonly');
+    const store = tx.objectStore(STORE_SETTINGS);
+    return new Promise((resolve) => {
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result?.value);
+      req.onerror = () => resolve(null);
+    });
+  }
+
+  async function setSetting(key, value) {
+    await openDB();
+    const tx = db.transaction(STORE_SETTINGS, 'readwrite');
+    const store = tx.objectStore(STORE_SETTINGS);
+    return new Promise((resolve, reject) => {
+      const req = store.put({ key, value });
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  async function getAllTransactions() {
+    await openDB();
+    const tx = db.transaction(STORE_TX, 'readonly');
+    const store = tx.objectStore(STORE_TX);
+    return new Promise((resolve) => {
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  }
+
+  async function addTransaction(txn) {
+    await openDB();
+    const tx = db.transaction(STORE_TX, 'readwrite');
+    const store = tx.objectStore(STORE_TX);
+    return new Promise((resolve, reject) => {
+      const req = store.add(txn);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  async function deleteTransaction(id) {
+    await openDB();
+    const tx = db.transaction(STORE_TX, 'readwrite');
+    const store = tx.objectStore(STORE_TX);
+    return new Promise((resolve, reject) => {
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  async function clearAllTransactions() {
+    await openDB();
+    const tx = db.transaction(STORE_TX, 'readwrite');
+    const store = tx.objectStore(STORE_TX);
+    return new Promise((resolve, reject) => {
+      const req = store.clear();
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  function showToast(msg, duration = 2000) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, duration);
+  }
+
+  // Custom confirm dialog
+  function customConfirm(message) {
+    return new Promise((resolve) => {
+      const confirmDiv = document.getElementById('customConfirm');
+      const msgSpan = document.getElementById('confirmMessage');
+      msgSpan.innerText = message;
+      confirmDiv.style.display = 'flex';
+      const onOk = () => {
+        confirmDiv.style.display = 'none';
+        cleanup();
+        resolve(true);
+      };
+      const onCancel = () => {
+        confirmDiv.style.display = 'none';
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        document.getElementById('confirmOk').removeEventListener('click', onOk);
+        document.getElementById('confirmCancel').removeEventListener('click', onCancel);
+      };
+      document.getElementById('confirmOk').addEventListener('click', onOk);
+      document.getElementById('confirmCancel').addEventListener('click', onCancel);
+    });
+  }
+
+  // Navigation stack
+  let navStack = ['langView'];
+
+  const views = ['langView', 'welcomeView', 'dashboardView', 'paymentInView', 'paymentOutView', 'detailsView'];
+  function showView(viewId, addToStack = true) {
+    if (addToStack && navStack[navStack.length - 1] !== viewId) {
+      navStack.push(viewId);
+    }
+    views.forEach(v => document.getElementById(v).classList.remove('active-view'));
+    document.getElementById(viewId).classList.add('active-view');
+    const backBtn = document.getElementById('globalBackBtn');
+    if (viewId === 'dashboardView' || viewId === 'langView' || viewId === 'welcomeView') {
+      backBtn.style.display = 'none';
+    } else {
+      backBtn.style.display = 'flex';
+    }
+    window.history.pushState({ view: viewId }, '', '#');
+  }
+
+  function goBack() {
+    if (navStack.length > 1) {
+      navStack.pop();
+      const prevView = navStack[navStack.length - 1];
+      showView(prevView, false);
+    } else {
+      if (document.getElementById('dashboardView').classList.contains('active-view')) return;
+      showView('dashboardView', false);
+    }
+  }
+
+  window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.view) {
+      showView(event.state.view, false);
+      navStack = [event.state.view];
+    } else {
+      goBack();
+    }
+  });
+
+  function formatINR(amount) { return '₹' + amount.toFixed(2); }
+
+  // Mode button logic
+  function initModeButtons(containerId, callback) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const btns = container.querySelectorAll('.mode-btn');
+    let selected = 'Cash';
+    btns.forEach(btn => {
+      if (btn.dataset.mode === 'Cash') btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selected = btn.dataset.mode;
+        if (callback) callback(selected);
+      });
+    });
+    return () => selected;
+  }
+
+  let getInMode = () => 'Cash';
+  let getOutMode = () => 'Cash';
+  initModeButtons('inModeButtons', (val) => { getInMode = () => val; });
+  initModeButtons('outModeButtons', (val) => { getOutMode = () => val; });
+
+  async function saveTransaction(type) {
+    try {
+      const isIn = type === 'in';
+      const name = document.getElementById(isIn ? 'inName' : 'outName').value.trim();
+      const amountRaw = document.getElementById(isIn ? 'inAmount' : 'outAmount').value;
+      const reason = document.getElementById(isIn ? 'inReason' : 'outReason').value.trim();
+      let date = document.getElementById(isIn ? 'inDate' : 'outDate').value;
+      const mode = isIn ? getInMode() : getOutMode();
+      if (!name) { showToast(t.nameRequired); return; }
+      if (!amountRaw || parseFloat(amountRaw) <= 0) { showToast(t.amountPositive); return; }
+      if (!date) date = new Date().toISOString().slice(0,10);
+      const amount = parseFloat(amountRaw);
+      const transaction = {
+        id: Date.now() + '-' + Math.random().toString(36).substring(2,6),
+        date: date,
+        name: name,
+        amount: amount,
+        reason: reason || '',
+        mode: mode,
+        type: type === 'in' ? 'Payment In' : 'Payment Out',
+        createdAt: new Date().toISOString()
+      };
+      await addTransaction(transaction);
+      showToast(`${type === 'in' ? 'Payment In' : 'Payment Out'} ${t.saved}`);
+      if (isIn) {
+        document.getElementById('inName').value = '';
+        document.getElementById('inAmount').value = '';
+        document.getElementById('inReason').value = '';
+      } else {
+        document.getElementById('outName').value = '';
+        document.getElementById('outAmount').value = '';
+        document.getElementById('outReason').value = '';
+      }
+      showView('dashboardView');
+    } catch (err) {
+      console.error(err);
+      showToast(t.saveFailed);
+    }
+  }
+
+  async function renderDetailsView() {
+    try {
+      const allTransactions = await getAllTransactions();
+      const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+      let totalInAll = 0, totalOutAll = 0;
+      allTransactions.forEach(t => {
+        if (t.type === 'Payment In') totalInAll += t.amount;
+        else totalOutAll += t.amount;
+      });
+      const balanceAll = totalInAll - totalOutAll;
+      document.getElementById('balanceAmount').innerText = formatINR(balanceAll);
+      document.getElementById('totalInSpan').innerHTML = formatINR(totalInAll);
+      document.getElementById('totalOutSpan').innerHTML = formatINR(totalOutAll);
+      document.getElementById('listTotalIn').innerHTML = formatINR(totalInAll);
+      document.getElementById('listTotalOut').innerHTML = formatINR(totalOutAll);
+      
+      const filtered = allTransactions.filter(t => 
+        t.name.toLowerCase().includes(searchTerm) || t.reason.toLowerCase().includes(searchTerm)
+      );
+      const container = document.getElementById('transactionListContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">📭 No matching transactions</div>';
+        return;
+      }
+      filtered.sort((a,b)=> new Date(b.date) - new Date(a.date));
+      let html = '';
+      for (const t of filtered) {
+        const amountClass = t.type === 'Payment In' ? 'in' : 'out';
+        const sign = t.type === 'Payment In' ? '+' : '−';
+        html += `
+          <div class="txn-item" data-id="${t.id}">
+            <div class="txn-left">
+              <div class="txn-name">${escapeHtml(t.name)}</div>
+              <div class="txn-meta">
+                <span>${t.date}</span>
+                <span>${t.mode}</span>
+              </div>
+            </div>
+            <div class="txn-amount ${amountClass}">${sign} ${formatINR(t.amount)}</div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+      document.querySelectorAll('.txn-item').forEach(row => {
+        row.addEventListener('click', () => showModalById(row.dataset.id));
+      });
+    } catch (err) {
+      console.error(err);
+      document.getElementById('transactionListContainer').innerHTML = '<div class="empty-state">Error loading data</div>';
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  async function showModalById(id) {
+    const transactions = await getAllTransactions();
+    const txn = transactions.find(t => t.id === id);
+    if (!txn) return;
+    const modal = document.getElementById('modal');
+    const content = document.getElementById('modalContent');
+    content.innerHTML = `
+      <div class="modal-detail-grid">
+        <div class="modal-detail-item"><strong>Date</strong><span>${txn.date}</span></div>
+        <div class="modal-detail-item"><strong>Amount</strong><span>${formatINR(txn.amount)}</span></div>
+        <div class="modal-detail-item"><strong>Mode</strong><span>${txn.mode}</span></div>
+        <div class="modal-detail-item"><strong>Type</strong><span>${txn.type}</span></div>
+        <div class="modal-reason"><strong>Reason</strong><span>${txn.reason ? escapeHtml(txn.reason) : '—'}</span></div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+    const closeModal = () => { modal.style.display = 'none'; };
+    document.getElementById('modalCloseBtn').onclick = closeModal;
+    document.getElementById('modalDeleteBtn').onclick = async () => {
+      const confirmed = await customConfirm(t.deleteConfirm);
+      if (confirmed) {
+        await deleteTransaction(txn.id);
+        showToast(t.deleted);
+        closeModal();
+        if (document.getElementById('detailsView').classList.contains('active-view')) renderDetailsView();
+      }
+    };
+  }
+
+  async function updateWelcomeMessage() {
+    const userName = await getSetting('userName');
+    const welcomeDiv = document.getElementById('welcomeMessage');
+    if (userName && userName.trim() !== '') {
+      welcomeDiv.innerHTML = `${t.dashWelcome} ${escapeHtml(userName)} 💌`;
+    } else {
+      welcomeDiv.innerHTML = `${t.dashWelcome} 💌`;
+    }
+  }
+
+  // Event listeners
+  document.getElementById('seeDetailsBtn')?.addEventListener('click', () => { renderDetailsView(); showView('detailsView'); });
+  document.getElementById('paymentInBtn')?.addEventListener('click', () => { showView('paymentInView'); setDefaultDates(); document.getElementById('inName')?.focus(); });
+  document.getElementById('paymentOutBtn')?.addEventListener('click', () => { showView('paymentOutView'); setDefaultDates(); document.getElementById('outName')?.focus(); });
+  document.getElementById('globalBackBtn')?.addEventListener('click', goBack);
+  document.getElementById('saveInBtn')?.addEventListener('click', () => saveTransaction('in'));
+  document.getElementById('saveOutBtn')?.addEventListener('click', () => saveTransaction('out'));
+  document.getElementById('exportDataBtn')?.addEventListener('click', async () => {
+    const txns = await getAllTransactions();
+    const dataStr = JSON.stringify(txns, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `cashbook_export_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(t.exportSuccess);
+  });
+  document.getElementById('importDataBtn')?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const imported = JSON.parse(text);
+        if (Array.isArray(imported) && imported.every(tx => tx.id && tx.amount && tx.type)) {
+          const confirmed = await customConfirm(t.importReplace);
+          if (confirmed) {
+            await clearAllTransactions();
+            for (const tx of imported) await addTransaction(tx);
+            showToast(t.importSuccess);
+            if (document.getElementById('detailsView').classList.contains('active-view')) renderDetailsView();
+          }
+        } else throw new Error();
+      } catch(e) { showToast(t.invalidJSON); }
+    };
+    input.click();
+  });
+  document.getElementById('backupFullBtn')?.addEventListener('click', async () => {
+    const userName = await getSetting('userName') || 'User';
+    const transactions = await getAllTransactions();
+    const backupObj = { userName, backupDate: new Date().toISOString().slice(0,10), transactions, version: 1 };
+    const blob = new Blob([JSON.stringify(backupObj, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `CashBook_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(t.backupCreated);
+  });
+  document.getElementById('restoreFullBtn')?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const backup = JSON.parse(text);
+        if (!backup.transactions || !Array.isArray(backup.transactions)) throw new Error();
+        const confirmed = await customConfirm(t.restoreMerge);
+        if (confirmed) {
+          const existingTx = await getAllTransactions();
+          const existingIds = new Set(existingTx.map(tx => tx.id));
+          let added = 0;
+          for (const tx of backup.transactions) {
+            if (tx.id && tx.amount && tx.type && !existingIds.has(tx.id)) {
+              await addTransaction(tx);
+              added++;
+            }
+          }
+          if (backup.userName && !(await getSetting('userName'))) {
+            await setSetting('userName', backup.userName);
+            await updateWelcomeMessage();
+          }
+          showToast(`${t.restored}: ${added} new`);
+          if (document.getElementById('detailsView').classList.contains('active-view')) renderDetailsView();
+        }
+      } catch(e) { showToast(t.invalidBackup); }
+    };
+    input.click();
+  });
+  document.getElementById('searchInput')?.addEventListener('input', () => renderDetailsView());
+  document.getElementById('continueBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('userNameInput').value.trim();
+    if (!name) { showToast(t.nameRequired); return; }
+    await setSetting('userName', name);
+    await updateWelcomeMessage();
+    showToast(`${t.dashWelcome}, ${name}`);
+    showView('dashboardView');
+  });
+
+  // Language selection
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const lang = btn.getAttribute('data-lang');
+      setLanguage(lang);
+      await setSetting('appLang', lang);
+      showView('welcomeView');
+    });
+  });
+
+  function setDefaultDates() {
+    const today = new Date().toISOString().slice(0,10);
+    if (document.getElementById('inDate') && !document.getElementById('inDate').value) document.getElementById('inDate').value = today;
+    if (document.getElementById('outDate') && !document.getElementById('outDate').value) document.getElementById('outDate').value = today;
+  }
+
+  async function initApp() {
+    await openDB();
+    const savedLang = await getSetting('appLang');
+    if (savedLang && translations[savedLang]) {
+      setLanguage(savedLang);
+    } else {
+      setLanguage('en');
+    }
+    const savedName = await getSetting('userName');
+    await updateWelcomeMessage();
+    if (savedName && savedName.trim() !== '') {
+      showView('dashboardView');
+      navStack = ['dashboardView'];
+    } else {
+      showView('langView');
+      navStack = ['langView'];
+    }
+    setDefaultDates();
+  }
+  window.onclick = (e) => { if (e.target === document.getElementById('modal')) document.getElementById('modal').style.display = 'none'; };
+  initApp();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/tools/service-worker.js')
+      .then(reg => console.log('SW registered', reg))
+      .catch(err => console.log('SW failed', err));
+  }
+</script>
+</body>
+</html>
