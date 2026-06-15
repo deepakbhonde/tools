@@ -1,10 +1,9 @@
-const CACHE_NAME = 'cashbook-v1';
+const CACHE_NAME = 'cashbook-v2';
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  '/tools/index.html',
+  '/tools/manifest.json',
+  '/tools/icon-192.png',
+  '/tools/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -16,7 +15,15 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(response => {
+      if (response) return response;
+      return fetch(event.request).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/tools/index.html');
+        }
+        return new Response('Offline content not available', { status: 404 });
+      });
+    })
   );
 });
 
