@@ -1,2 +1,2 @@
-# tools
-Tools for daily issue.
+* ALL RIGHTS RESERVED.
+* ANY PART OF THE CONTENT NOT ALLOWED TO BE USED.
