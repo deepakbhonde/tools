@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cashbook-v1';
+const CACHE_NAME = 'cashbook-v2';  // Version bump to force update
 
 const ASSETS = [
   './',
@@ -56,46 +56,28 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ============================================
-// NOTIFICATION HANDLERS
+// NOTIFICATION CLICK HANDLER – opens specific reminder
 // ============================================
-
-// Handle notification click – open app and navigate to specific reminder
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  // Extract reminder ID from notification tag (tag format: 'reminder-{id}')
+
+  // Extract reminder ID from tag
   const reminderId = event.notification.tag.replace('reminder-', '');
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If there's already a window/tab open
+        // If a window/tab is already open, focus it and pass reminder ID via URL
         for (const client of clientList) {
           if (client.url && 'focus' in client) {
             client.focus();
-            client.postMessage({
-              type: 'OPEN_REMINDER',
-              payload: { reminderId }
-            });
+            // Use URL hash or query param to pass the reminder ID
+            client.navigate(`/?reminder=${reminderId}`);
             return client;
           }
         }
-        // Otherwise open a new window/tab with reminder ID in URL
+        // Otherwise open a new window with the reminder ID
         return clients.openWindow(`/?reminder=${reminderId}`);
       })
   );
-});
-
-// Handle messages from the main app to show notifications
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-    const { title, body, tag } = event.data.payload;
-    self.registration.showNotification(title, {
-      body: body,
-      icon: './icon-192.png',
-      badge: './icon-192.png',
-      tag: tag || 'reminder',
-      requireInteraction: true,
-    });
-  }
 });
