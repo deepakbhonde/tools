@@ -1079,6 +1079,12 @@
         let userName = localStorage.getItem('cashbook_userName') || '';
         let transactions = JSON.parse(localStorage.getItem('cashbook_transactions') || '[]');
 
+        // ==================== FILTER STATE (declared early) ====================
+        // Must be before renderDetailsView so unified function can close over them
+        let activeFilter = 'ALL';
+        let monthFilterActive = null;
+        let yearFilterActive = null;
+
         // ==================== DATE HELPER FUNCTIONS ====================
         function isoToDisplay(isoDate) {
             if (!isoDate || isoDate === '') return '';
@@ -1604,55 +1610,151 @@
             return true;
         }
 
-        // ==================== DETAILS VIEW RENDERING ====================
+        // ==================== FILTER HELPERS ====================
+        function getCurrentFilterLabel() {
+            if (monthFilterActive) return 'This Month';
+            if (yearFilterActive === 'LAST_MONTH') return 'Last Month';
+            if (yearFilterActive === 'THIS_YEAR') return 'This Year';
+            if (yearFilterActive === 'LAST_YEAR') return 'Last Year';
+            if (activeFilter && activeFilter !== 'ALL') return activeFilter;
+            return null;
+        }
+
+        function updateFilterBadgeV2() {
+            const b = document.getElementById('activeFilterBadge');
+            if (!b) return;
+
+            let txt = '';
+            if (monthFilterActive) txt = '📅 This Month';
+            else if (yearFilterActive === 'LAST_MONTH') txt = '📅 Last Month';
+            else if (yearFilterActive === 'THIS_YEAR') txt = '📅 This Year';
+            else if (yearFilterActive === 'LAST_YEAR') txt = '📅 Last Year';
+            else if (activeFilter && activeFilter !== 'ALL') txt = activeFilter;
+
+            if (!txt) {
+                b.style.display = 'none';
+                return;
+            }
+
+            b.style.display = 'inline-block';
+            b.style.background = '#00D09C';
+            b.style.color = '#fff';
+            b.style.padding = '6px 12px';
+            b.style.borderRadius = '20px';
+            b.innerHTML = txt + ' <span id="removeActiveFilter" style="cursor:pointer">❌</span>';
+
+            const x = document.getElementById('removeActiveFilter');
+            if (x) {
+                x.onclick = function() {
+                    activeFilter = 'ALL';
+                    monthFilterActive = null;
+                    yearFilterActive = null;
+                    renderDetailsView();
+                };
+            }
+        }
+
+        // ==================== DETAILS VIEW RENDERING (UNIFIED) ====================
+        // FIX: Single function handles search + all filters + correct empty state.
+        // Previously the filter logic was monkey-patched as a wrapper that only updated
+        // totals but never filtered the visible transaction list — now both are unified.
         function renderDetailsView() {
             const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
 
-            let totalInAll = 0;
-            let totalOutAll = 0;
+            // Apply search + all filters in one pass
+            let filtered = transactions.filter(txn => {
+                // Search
+                const matchesSearch =
+                    txn.name.toLowerCase().includes(searchTerm) ||
+                    txn.reason.toLowerCase().includes(searchTerm);
+                if (!matchesSearch) return false;
 
-            transactions.forEach(transaction => {
-                if (transaction.type === 'Payment In') {
-                    totalInAll += transaction.amount;
-                } else {
-                    totalOutAll += transaction.amount;
+                // Type / mode filter
+                if (activeFilter === 'Payment In'  && txn.type !== 'Payment In')  return false;
+                if (activeFilter === 'Payment Out' && txn.type !== 'Payment Out') return false;
+                if (activeFilter === 'Cash'        && txn.mode !== 'Cash')        return false;
+                if (activeFilter === 'Online'      && txn.mode !== 'Online')      return false;
+                if (activeFilter && activeFilter.startsWith('DATE:')) {
+                    if (txn.date !== activeFilter.replace('DATE:', '')) return false;
                 }
+
+                // Month / year filter
+                if (monthFilterActive && !String(txn.date || '').startsWith(monthFilterActive)) return false;
+                if (yearFilterActive) {
+                    const now = new Date();
+                    if (yearFilterActive === 'THIS_YEAR') {
+                        if (!String(txn.date || '').startsWith(String(now.getFullYear()))) return false;
+                    }
+                    if (yearFilterActive === 'LAST_YEAR') {
+                        if (!String(txn.date || '').startsWith(String(now.getFullYear() - 1))) return false;
+                    }
+                    if (yearFilterActive === 'LAST_MONTH') {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() - 1);
+                        const ym = d.toISOString().slice(0, 7);
+                        if (!String(txn.date || '').startsWith(ym)) return false;
+                    }
+                }
+                return true;
             });
 
-            const balance = totalInAll - totalOutAll;
+            // Totals from filtered set
+            let tin = 0, tout = 0;
+            filtered.forEach(txn => {
+                if (txn.type === 'Payment In') tin += Number(txn.amount || 0);
+                else tout += Number(txn.amount || 0);
+            });
+            const balance = tin - tout;
 
             document.getElementById('balanceAmount').innerText = formatINR(balance);
-            document.getElementById('totalInSpan').innerHTML = formatINR(totalInAll);
-            document.getElementById('totalOutSpan').innerHTML = formatINR(totalOutAll);
-            document.getElementById('listTotalIn').innerHTML = formatINR(totalInAll);
-            document.getElementById('listTotalOut').innerHTML = formatINR(totalOutAll);
+            document.getElementById('totalInSpan').innerHTML   = formatINR(tin);
+            document.getElementById('totalOutSpan').innerHTML  = formatINR(tout);
+            document.getElementById('listTotalIn').innerHTML   = formatINR(tin);
+            document.getElementById('listTotalOut').innerHTML  = formatINR(tout);
 
-            const filteredTransactions = transactions.filter(transaction => {
-                return transaction.name.toLowerCase().includes(searchTerm) ||
-                    transaction.reason.toLowerCase().includes(searchTerm);
+            // Update labels based on active filter
+            const label = getCurrentFilterLabel();
+            const balLabel = document.getElementById('availableBalanceLabel');
+            if (label) {
+                if (balLabel) balLabel.textContent = label + ' Balance';
+                document.getElementById('totalInLabel').textContent    = label + ' In';
+                document.getElementById('totalOutLabel').textContent   = label + ' Out';
+                document.getElementById('listTotalInLabel').textContent  = label + ' In';
+                document.getElementById('listTotalOutLabel').textContent = label + ' Out';
+            } else {
+                if (balLabel) balLabel.textContent = t('availableBalance');
+                document.getElementById('totalInLabel').textContent    = t('totalIn');
+                document.getElementById('totalOutLabel').textContent   = t('totalOut');
+                document.getElementById('listTotalInLabel').textContent  = t('totalIn');
+                document.getElementById('listTotalOutLabel').textContent = t('totalOut');
+            }
+
+            // Render transaction list
+            filtered.sort((a, b) => {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() :
+                    (a.id ? parseInt(String(a.id).split('-')[0]) : 0);
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() :
+                    (b.id ? parseInt(String(b.id).split('-')[0]) : 0);
+                return bTime - aTime;
             });
 
             const container = document.getElementById('txnList');
 
-            if (filteredTransactions.length === 0) {
-                container.innerHTML = `<div class="empty-state">📭 ${t('noMatches')}</div>`;
+            if (filtered.length === 0) {
+                // FIX: distinguish "no transactions at all" vs "filter has no results"
+                const emptyMsg = (transactions.length === 0 && !searchTerm)
+                    ? `✨ ${t('noTransactions')}`
+                    : `📭 ${t('noMatches')}`;
+                container.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+                updateFilterBadgeV2();
                 return;
             }
 
-            filteredTransactions.sort((a, b) => {
-                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : (a.id ? parseInt(String(a.id).split('-')[0]) :
-                0);
-                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : (b.id ? parseInt(String(b.id).split('-')[0]) :
-                0);
-                return bTime - aTime;
-            });
-
             let html = '';
-            for (const transaction of filteredTransactions) {
+            for (const transaction of filtered) {
                 const amountClass = transaction.type === 'Payment In' ? 'in' : 'out';
                 const sign = transaction.type === 'Payment In' ? '+' : '−';
                 const displayDate = isoToDisplay(transaction.date);
-
                 html += `
                 <div class="txn-item" data-id="${transaction.id}">
                   <div>
@@ -1665,21 +1767,19 @@
                   <div class="txn-amount ${amountClass}">
                     ${sign} ${formatINR(transaction.amount)}
                   </div>
-                </div>
-              `;
+                </div>`;
             }
-
             container.innerHTML = html;
 
             document.querySelectorAll('.txn-item').forEach(element => {
                 element.addEventListener('click', () => {
                     const transactionId = element.getAttribute('data-id');
                     const transaction = transactions.find(t => t.id === transactionId);
-                    if (transaction) {
-                        showTransactionModal(transaction);
-                    }
+                    if (transaction) showTransactionModal(transaction);
                 });
             });
+
+            updateFilterBadgeV2();
         }
 
         // ==================== TRANSACTION DETAILS MODAL ====================
@@ -1783,8 +1883,9 @@
             const backupData = {
                 userName: userName,
                 transactions: transactions,
+                reminders: reminders,  // FIX: reminders were missing from backup
                 backupDate: new Date().toISOString().slice(0, 10),
-                version: 1
+                version: 2
             };
             const dataStr = JSON.stringify(backupData, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -1819,6 +1920,17 @@
                                 transactions.push(transaction);
                                 addedCount++;
                             }
+                        }
+                        // FIX: restore reminders (merge, no duplicates)
+                        if (backupData.reminders && Array.isArray(backupData.reminders)) {
+                            const existingReminderIds = new Set(reminders.map(r => r.id));
+                            for (const reminder of backupData.reminders) {
+                                if (reminder.id && !existingReminderIds.has(reminder.id)) {
+                                    reminders.push(reminder);
+                                }
+                            }
+                            saveReminders();
+                            scheduleAllPendingReminders();
                         }
                         if (backupData.userName && !userName) {
                             userName = backupData.userName;
@@ -1886,9 +1998,9 @@
             return new Date(r.date + 'T' + r.time) < new Date();
         }
 
-        function formatReminderTime(t) {
-            if (!t) return '';
-            const [h, m] = t.split(':');
+        function formatReminderTime(timeStr) {
+            if (!timeStr) return '';
+            const [h, m] = timeStr.split(':');
             let hh = parseInt(h, 10);
             const ap = hh >= 12 ? 'PM' : 'AM';
             hh = hh % 12 || 12;
@@ -1963,6 +2075,10 @@
   const delay = new Date(r.date + 'T' + r.time).getTime() - Date.now();
   if (delay <= 0) return;
 
+  // FIX: setTimeout max is ~24.8 days (2^31-1 ms); longer reminders silently fail
+  // We skip scheduling now; scheduleAllPendingReminders runs on each app open
+  if (delay > 2147483647) return;
+
   if (_notifTimers[r.id]) clearTimeout(_notifTimers[r.id]);
 
   _notifTimers[r.id] = setTimeout(async () => {
@@ -1976,6 +2092,7 @@
         badge: './icon-192.png',
         tag: 'reminder-' + r.id,
         requireInteraction: true,
+        data: { reminderId: r.id }  // FIX: SW needs this to open specific reminder
       });
     } catch (swError) {
       // Fallback: direct notification (works when app is open)
@@ -1992,6 +2109,8 @@
         
 
         function scheduleAllPendingReminders() {
+            // FIX: only schedule if permission already granted — never auto-prompt on app load
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
             reminders.forEach(r => { if (!isExpired(r)) scheduleNotification(r); });
         }
 
@@ -2167,6 +2286,11 @@ function handleURLParams() {
                 err.style.display = 'block'; return; }
             if (!time.value) { err.innerText = 'Please select a time';
                 err.style.display = 'block'; return; }
+            // FIX: validate that reminder is set in the future
+            if (new Date(date.value + 'T' + time.value) <= new Date()) {
+                err.innerText = 'Please select a future date and time';
+                err.style.display = 'block'; return;
+            }
 
             const newReminder = {
                 id: Date.now() + '',
@@ -2239,126 +2363,6 @@ function handleURLParams() {
             );
             updateDarkButton();
         });
-
-        // ==================== FILTER LOGIC ====================
-        let activeFilter = 'ALL';
-        let monthFilterActive = null;
-        let yearFilterActive = null;
-
-        function updateFilterBadgeV2() {
-            const b = document.getElementById('activeFilterBadge');
-            if (!b) return;
-
-            let txt = '';
-            if (monthFilterActive) txt = '📅 This Month';
-            else if (yearFilterActive === 'LAST_MONTH') txt = '📅 Last Month';
-            else if (yearFilterActive === 'THIS_YEAR') txt = '📅 This Year';
-            else if (yearFilterActive === 'LAST_YEAR') txt = '📅 Last Year';
-            else if (activeFilter && activeFilter !== 'ALL') txt = activeFilter;
-
-            if (!txt) {
-                b.style.display = 'none';
-                return;
-            }
-
-            b.style.display = 'inline-block';
-            b.style.background = '#00D09C';
-            b.style.color = '#fff';
-            b.style.padding = '6px 12px';
-            b.style.borderRadius = '20px';
-            b.innerHTML = txt + ' <span id="removeActiveFilter" style="cursor:pointer">❌</span>';
-
-            const x = document.getElementById('removeActiveFilter');
-            if (x) {
-                x.onclick = function() {
-                    activeFilter = 'ALL';
-                    monthFilterActive = null;
-                    yearFilterActive = null;
-                    document.querySelectorAll('.txn-item').forEach(e => e.style.display = '');
-                    renderDetailsView();
-                };
-            }
-        }
-
-        function getCurrentFilterLabel() {
-            if (monthFilterActive) return 'This Month';
-            if (yearFilterActive === 'LAST_MONTH') return 'Last Month';
-            if (yearFilterActive === 'THIS_YEAR') return 'This Year';
-            if (yearFilterActive === 'LAST_YEAR') return 'Last Year';
-            if (activeFilter && activeFilter !== 'ALL') return activeFilter;
-            return null;
-        }
-
-        const _origRenderDetails = renderDetailsView;
-        renderDetailsView = function() {
-            _origRenderDetails();
-
-            let filtered = [...transactions];
-
-            if (activeFilter === 'Payment In') filtered = filtered.filter(t => t.type === 'Payment In');
-            if (activeFilter === 'Payment Out') filtered = filtered.filter(t => t.type === 'Payment Out');
-            if (activeFilter === 'Cash') filtered = filtered.filter(t => t.mode === 'Cash');
-            if (activeFilter === 'Online') filtered = filtered.filter(t => t.mode === 'Online');
-            if (activeFilter && activeFilter.startsWith('DATE:')) {
-                filtered = filtered.filter(t => t.date === activeFilter.replace('DATE:', ''));
-            }
-
-            if (monthFilterActive) {
-                filtered = filtered.filter(t => String(t.date || '').startsWith(monthFilterActive));
-            }
-
-            if (yearFilterActive) {
-                const now = new Date();
-                if (yearFilterActive === 'THIS_YEAR') {
-                    filtered = filtered.filter(t => String(t.date || '').startsWith(String(now.getFullYear())));
-                }
-                if (yearFilterActive === 'LAST_YEAR') {
-                    filtered = filtered.filter(t => String(t.date || '').startsWith(String(now.getFullYear() - 1)));
-                }
-                if (yearFilterActive === 'LAST_MONTH') {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() - 1);
-                    const ym = d.toISOString().slice(0, 7);
-                    filtered = filtered.filter(t => String(t.date || '').startsWith(ym));
-                }
-            }
-
-            let tin = 0,
-                tout = 0;
-            filtered.forEach(t => {
-                if (t.type === 'Payment In') tin += Number(t.amount || 0);
-                else tout += Number(t.amount || 0);
-            });
-
-            const label = getCurrentFilterLabel();
-            const balance = tin - tout;
-
-            const balAmt = document.getElementById('balanceAmount');
-            if (balAmt) balAmt.textContent = '₹' + balance.toFixed(2);
-
-            document.getElementById('totalInSpan').textContent = '₹' + tin.toFixed(2);
-            document.getElementById('totalOutSpan').textContent = '₹' + tout.toFixed(2);
-            document.getElementById('listTotalIn').textContent = '₹' + tin.toFixed(2);
-            document.getElementById('listTotalOut').textContent = '₹' + tout.toFixed(2);
-
-            if (label) {
-                const b = document.getElementById('availableBalanceLabel');
-                if (b) b.textContent = label + ' Balance';
-                document.getElementById('totalInLabel').textContent = label + ' In';
-                document.getElementById('totalOutLabel').textContent = label + ' Out';
-                document.getElementById('listTotalInLabel').textContent = label + ' In';
-                document.getElementById('listTotalOutLabel').textContent = label + ' Out';
-            } else {
-                const b = document.getElementById('availableBalanceLabel');
-                if (b) b.textContent = 'Available Balance';
-                document.getElementById('totalInLabel').textContent = 'Total In';
-                document.getElementById('totalOutLabel').textContent = 'Total Out';
-                document.getElementById('listTotalInLabel').textContent = 'Total In';
-                document.getElementById('listTotalOutLabel').textContent = 'Total Out';
-            }
-
-            updateFilterBadgeV2();
-        };
 
         document.querySelectorAll('.fbtn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2463,31 +2467,6 @@ function handleURLParams() {
 
         initApp();
 
-        // ==================== REMINDER ERROR HANDLING ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            const saveBtn = document.getElementById('saveReminderBtn');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', function(e) {
-                    const err = document.getElementById('reminderError');
-                    const d = document.getElementById('remDate');
-                    const t = document.getElementById('remTime');
-                    if (!err) return;
-                    err.style.display = 'none';
-                    if (d && !d.value) {
-                        err.innerText = 'Please select reminder date';
-                        err.style.display = 'block';
-                        e.stopImmediatePropagation();
-                        return;
-                    }
-                    if (t && !t.value) {
-                        err.innerText = 'Please select reminder time';
-                        err.style.display = 'block';
-                        e.stopImmediatePropagation();
-                        return;
-                    }
-                }, true);
-            }
-        });
     </script>
 </body>
 </html>
