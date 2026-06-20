@@ -633,13 +633,14 @@ body.dark-mode #transactionModal .modal-card div[style*="border-top:1px solid #e
 ============================================================ */
 
 /* --- ENTRY WRAP (container for top dark zone + white body) --- */
-.entry-wrap { overflow: hidden; border-radius: var(--r-lg); margin-bottom: 6px; }
+.entry-wrap { overflow: hidden; border-radius: var(--r-lg); margin-bottom: 6px; isolation: isolate; }
 
 /* --- ENTRY TOP (light tinted amount zone) --- */
 .entry-top {
     background: linear-gradient(155deg, #EAFBF4 0%, #DFF6EC 60%, #D8F2E6 100%);
     padding: 20px 20px 18px; position: relative; overflow: hidden; cursor: text;
     border-bottom: 1px solid rgba(0,150,110,0.12);
+    border-radius: var(--r-lg) var(--r-lg) 0 0; /* explicit — fixes corner-clip bug in some WebViews */
 }
 .entry-top.et-out {
     background: linear-gradient(155deg, #FFF0EE 0%, #FFE6E3 60%, #FFDFDB 100%);
@@ -728,6 +729,7 @@ body.dark-mode #transactionModal .modal-card div[style*="border-top:1px solid #e
 /* --- ENTRY BODY (white form section) --- */
 .entry-body {
     background: var(--paper); padding: 20px 18px 100px;
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
 }
 body.dark-mode .entry-body { background: var(--paper); }
 
