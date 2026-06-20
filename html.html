@@ -1,0 +1,2881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Simple Cash Book</title>
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+/* ============================================
+   CASH BOOK — v6.0 Extraordinary Redesign
+   Space Grotesk + DM Mono
+   Signature: Dark calculator-style amount screen
+============================================ */
+:root {
+    --ink: #0D1F2D;
+    --green: #00C896;
+    --green-deep: #009E78;
+    --coral: #FF5047;
+    --coral-deep: #D93B31;
+    --gold: #E8A800;
+    --indigo: #6366F1;
+    --surface: #EEF2F7;
+    --card: #FFFFFF;
+    --paper: #FFFEF9;
+    --muted: #6B7280;
+    --muted-light: #9CA3AF;
+    --border: #E2E8F0;
+    --shadow-sm: 0 1px 3px rgba(13,31,45,0.06), 0 1px 2px rgba(13,31,45,0.03);
+    --shadow-md: 0 4px 16px rgba(13,31,45,0.08), 0 2px 6px rgba(13,31,45,0.04);
+    --shadow-lg: 0 12px 40px rgba(13,31,45,0.14), 0 4px 16px rgba(13,31,45,0.07);
+    --r-sm: 14px; --r-md: 20px; --r-lg: 28px; --r-full: 999px;
+}
+html {
+    overscroll-behavior-y: none;
+    height: 100%;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 20px 16px 40px;
+    min-height: 100vh;
+    overscroll-behavior-y: none;
+}
+.app-container { max-width: 440px; width: 100%; margin: 0 auto; }
+
+/* ============================================ HEADER */
+.header {
+    padding: 44px 0 18px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+.header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.back-btn {
+    position: absolute; left: 0; top: 36px;
+    background: var(--card); border: none;
+    font-size: 20px; width: 64px; height: 42px;
+    border-radius: var(--r-full);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+}
+.back-btn:active { background: #EEF2F7; transform: scale(0.93); }
+
+.top-right-buttons {
+    position: fixed; top: 8px; right: 16px;
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; z-index: 1000;
+    max-width: 220px;
+}
+.top-icon-btn {
+    background: var(--card); border: none;
+    font-size: 11px; font-weight: 600;
+    padding: 6px 11px; border-radius: var(--r-full);
+    cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: all 0.12s ease;
+    display: flex; align-items: center; gap: 3px; color: var(--ink);
+}
+.top-icon-btn:active { transform: scale(0.93); background: #EEF2F7; }
+
+/* ============================================ VIEWS */
+.view { display: none; animation: fadeUp 0.22s ease; }
+.active-view { display: block; }
+#langView.active-view, #nameView.active-view {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    min-height: calc(100vh - 200px);
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================ HERO CARD (Dashboard + Summary) */
+.hero-card, .summary-card {
+    background: linear-gradient(145deg, #EAF6F2 0%, #E3F3ED 55%, #DEF1EA 100%);
+    border-radius: var(--r-lg);
+    padding: 26px 22px 22px;
+    color: var(--ink);
+    position: relative; overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(0,150,110,0.1);
+}
+.hero-card::before, .summary-card::before {
+    content: ''; position: absolute;
+    top: -50px; right: -50px; width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,200,150,0.12) 0%, transparent 68%);
+    pointer-events: none;
+}
+.hero-card::after, .summary-card::after {
+    content: ''; position: absolute;
+    bottom: -30px; left: -20px; width: 130px; height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,168,0,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Dashboard hero */
+.hero-meta { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 3px; }
+.hero-name { font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 22px; }
+.hero-balance-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.hero-balance-num {
+    font-size: 42px; font-weight: 800; color: var(--green-deep);
+    letter-spacing: -2px; line-height: 1.05; margin-bottom: 18px;
+    font-family: 'DM Mono', 'Space Grotesk', monospace;
+}
+.hero-stats {
+    display: flex; background: rgba(0,100,70,0.06);
+    border-radius: var(--r-md); overflow: hidden;
+}
+.hero-stat { flex: 1; padding: 11px 14px; position: relative; }
+.hero-stat + .hero-stat::before {
+    content: ''; position: absolute;
+    left: 0; top: 18%; bottom: 18%; width: 1px;
+    background: rgba(0,50,40,0.1);
+}
+.hero-stat-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+.hero-stat-num { font-size: 15px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.hero-stat-num.hs-in  { color: var(--green-deep); }
+.hero-stat-num.hs-out { color: var(--coral-deep); }
+
+/* Summary card (details view) */
+.indicator-row {
+    display: flex; justify-content: center; gap: 20px;
+    margin-bottom: 10px; font-size: 13px; font-weight: 600;
+}
+.indicator-in  { color: var(--green-deep); display: flex; align-items: center; gap: 5px; }
+.indicator-out { color: var(--coral-deep); display: flex; align-items: center; gap: 5px; }
+#availableBalanceLabel {
+    font-size: 11px !important; color: var(--muted) !important;
+    font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.balance-number {
+    font-size: 42px; font-weight: 800; margin: 6px 0 14px;
+    letter-spacing: -2px; color: var(--green-deep);
+    font-family: 'DM Mono', monospace;
+}
+.total-row {
+    display: flex; justify-content: space-between; margin-top: 7px;
+    font-weight: 600; font-size: 14px; color: var(--muted);
+}
+
+/* ============================================ DASHBOARD BUTTONS */
+.dashboard-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.btn-large {
+    background: var(--card); border: none;
+    padding: 20px 16px 16px; border-radius: var(--r-lg);
+    font-size: 14px; font-weight: 700; text-align: left;
+    cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+    border-top: 3px solid transparent;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.btn-large:active { transform: scale(0.96); background: #FAFBFC; }
+.btn-large .bl-icon { font-size: 26px; line-height: 1; }
+.btn-large .bl-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+.btn-large .bl-sub { font-size: 11px; color: var(--muted); font-weight: 500; line-height: 1.3; }
+.btn-large.bl-in      { border-top-color: var(--green); }
+.btn-large.bl-out     { border-top-color: var(--coral); }
+.btn-large.bl-details { border-top-color: var(--indigo); }
+.btn-large.bl-remind  { border-top-color: var(--gold); }
+.dash-edit-wrap { text-align: center; margin-top: 12px; }
+
+/* ============================================ BUTTONS */
+.btn-primary {
+    background: var(--green); border: none; color: white;
+    padding: 16px 24px; border-radius: var(--r-full);
+    font-weight: 700; font-size: 16px; width: 100%;
+    cursor: pointer; transition: all 0.18s ease;
+    font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.2px;
+}
+.btn-primary:active { background: var(--green-deep); transform: scale(0.97); }
+.btn-primary.btn-coral { background: var(--coral); }
+.btn-primary.btn-coral:active { background: var(--coral-deep); }
+
+.btn-secondary {
+    background: var(--surface); color: var(--ink); border: none;
+    padding: 11px 18px; border-radius: var(--r-full);
+    font-weight: 600; font-size: 14px; cursor: pointer;
+    transition: all 0.12s ease; font-family: 'Space Grotesk', sans-serif;
+}
+.btn-secondary:active { background: var(--border); transform: scale(0.96); }
+
+/* ============================================ FORM CARD */
+.card {
+    background: var(--card); border-radius: var(--r-lg);
+    padding: 26px 20px; box-shadow: var(--shadow-sm);
+}
+.form-card {
+    background: var(--paper); border-radius: var(--r-lg);
+    padding: 0 0 24px; box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(0,0,0,0.035); overflow: hidden;
+}
+
+/* Form type banner at top */
+.form-banner {
+    padding: 18px 20px 16px;
+    margin-bottom: 6px;
+    position: relative;
+}
+.form-banner.fb-in  { background: linear-gradient(135deg, #003D2E 0%, #005C44 100%); }
+.form-banner.fb-out { background: linear-gradient(135deg, #3D0E00 0%, #5C1A00 100%); }
+.form-banner-top { display: flex; align-items: center; gap: 10px; }
+.form-banner-icon { font-size: 28px; }
+.form-banner-info {}
+.form-banner-type {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 1px;
+}
+.form-banner-title { font-size: 18px; font-weight: 800; color: white; }
+
+/* ============================================ AMOUNT SCREEN (SIGNATURE ELEMENT)
+   This is the extraordinary element — a dark calculator-style display
+   that shows the formatted ₹ amount live as the user types.
+============================================ */
+.amount-screen-wrap { padding: 0 20px; margin-bottom: 4px; }
+.amount-screen {
+    background: #0B1520;
+    border-radius: var(--r-md);
+    padding: 16px 18px 14px;
+    position: relative; overflow: hidden;
+    transition: box-shadow 0.2s ease;
+    cursor: text;
+    margin-bottom: 14px;
+}
+.amount-screen::before {
+    content: ''; position: absolute;
+    top: -20px; right: -20px; width: 100px; height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,200,150,0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+.amount-screen.as-focused { box-shadow: 0 0 0 3px rgba(0,200,150,0.3); }
+.as-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    margin-bottom: 5px;
+}
+.as-value {
+    font-family: 'DM Mono', 'Space Grotesk', monospace;
+    font-size: 38px; font-weight: 700;
+    color: #FFFFFF; letter-spacing: -1.5px; line-height: 1;
+    display: flex; align-items: baseline; gap: 3px;
+}
+.as-rupee { color: var(--green); font-size: 24px; font-weight: 600; }
+.as-blink {
+    display: inline-block; width: 2px; height: 32px;
+    background: var(--green); margin-left: 2px; vertical-align: bottom;
+    animation: blink 1.1s step-end infinite; opacity: 0;
+}
+.amount-screen.as-focused .as-blink { opacity: 1; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Amount input below the screen */
+.amount-input-row { padding: 0 20px; }
+
+/* ============================================ FORM FIELDS */
+.form-fields { padding: 0 20px; }
+input, select {
+    width: 100%; padding: 13px 16px;
+    border-radius: var(--r-sm); border: 1.5px solid var(--border);
+    background: white; font-size: 15px; margin-bottom: 13px;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: all 0.18s ease; color: var(--ink); font-weight: 500;
+}
+input:focus {
+    outline: none; border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.1); background: white;
+}
+input[type="number"] { font-family: 'DM Mono', monospace; font-size: 16px; }
+label {
+    display: block; font-weight: 700; margin-bottom: 5px;
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.6px;
+}
+
+/* ============================================ MODE BUTTONS */
+.mode-buttons {
+    display: flex; gap: 0; margin-bottom: 16px;
+    background: var(--surface); border-radius: var(--r-full); padding: 4px;
+}
+.mode-btn {
+    flex: 1; background: transparent; border: none;
+    padding: 11px; border-radius: var(--r-full);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.18s ease; color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+}
+.mode-btn.active { background: white; color: var(--ink); box-shadow: 0 2px 8px rgba(13,31,45,0.1); }
+
+/* ============================================ SAVE BUTTON IN FORM */
+.form-save-wrap { padding: 0 20px; }
+
+/* ============================================ ONBOARDING SCREENS (Language / Name) */
+.onboard-card {
+    width: 100%; background: var(--card); border-radius: var(--r-lg);
+    padding: 36px 28px 32px; box-shadow: var(--shadow-md);
+    text-align: center; position: relative; overflow: hidden;
+}
+.onboard-card::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,200,150,0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+.onboard-icon {
+    font-size: 52px; margin-bottom: 14px; line-height: 1;
+    display: inline-block; animation: floatIcon 3s ease-in-out infinite;
+}
+@keyframes floatIcon { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.onboard-title {
+    font-size: 21px; font-weight: 800; color: var(--ink);
+    margin-bottom: 6px; letter-spacing: -0.3px;
+}
+.onboard-sub {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    margin-bottom: 26px; line-height: 1.4;
+}
+
+/* Language buttons — full-width stacked rows */
+.lang-btn-list { display: flex; flex-direction: column; gap: 10px; }
+.lang-btn {
+    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+    padding: 16px 20px; border-radius: var(--r-md);
+    font-size: 16px; font-weight: 700; margin: 0;
+    cursor: pointer; transition: all 0.15s ease;
+    font-family: 'Space Grotesk', sans-serif; color: var(--ink);
+    display: flex; align-items: center; gap: 12px; text-align: left;
+}
+.lang-btn .lb-flag { font-size: 22px; flex-shrink: 0; }
+.lang-btn .lb-arrow { margin-left: auto; opacity: 0.3; font-size: 16px; }
+.lang-btn:active {
+    background: rgba(0,200,150,0.08); border-color: var(--green);
+    transform: scale(0.97);
+}
+.lang-btn:active .lb-arrow { opacity: 1; color: var(--green); }
+
+/* Name entry field on onboarding card */
+.onboard-card .field-wrap { margin-bottom: 18px; text-align: left; }
+.onboard-card .field-input { font-size: 17px; padding: 18px 16px 8px; }
+
+/* ============================================ TRANSACTION LIST */
+.details-sticky-head {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--surface); margin: 0 -16px; padding: 0 16px;
+}
+body.dark-mode .details-sticky-head { background: var(--surface); }
+
+.txn-list {
+    margin-top: 10px; height: calc(100vh - 430px); min-height: 220px;
+    overflow-y: auto; overscroll-behavior: contain;
+    display: flex; flex-direction: column; gap: 8px; padding-right: 2px;
+}
+.txn-list::-webkit-scrollbar { width: 3px; }
+.txn-list::-webkit-scrollbar-track { background: transparent; }
+.txn-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ============================================ REMINDER FILTER CHIPS */
+.rem-filter-row {
+    display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain;
+    padding-bottom: 4px; margin-bottom: 6px;
+    -ms-overflow-style: none; scrollbar-width: none;
+}
+.rem-filter-row::-webkit-scrollbar { display: none; }
+.rfchip {
+    flex-shrink: 0; background: var(--card); border: 1.5px solid var(--border);
+    color: var(--muted); font-size: 13px; font-weight: 700;
+    padding: 9px 16px; border-radius: var(--r-full); cursor: pointer;
+    transition: all 0.15s ease; font-family: 'Space Grotesk', sans-serif;
+    box-shadow: var(--shadow-sm);
+}
+.rfchip.active {
+    background: var(--green); border-color: var(--green); color: white;
+    box-shadow: 0 4px 14px rgba(0,200,150,0.3);
+}
+.rfchip:active { transform: scale(0.94); }
+body.dark-mode .rfchip { background: var(--card); border-color: var(--border); color: var(--muted); }
+body.dark-mode .rfchip.active { background: var(--green); border-color: var(--green); color: white; }
+
+.list-total-foot {
+    position: sticky; bottom: 0; z-index: 40;
+    display: flex; justify-content: space-around; align-items: center;
+    margin: 10px -16px 0; padding: 14px 16px;
+    font-weight: 700; font-size: 14px; color: var(--ink);
+    background: var(--card); border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(13,31,45,0.06);
+}
+.list-total-foot .ltf-pair { display: flex; align-items: center; gap: 6px; }
+.list-total-foot #listTotalInLabel,
+.list-total-foot #listTotalOutLabel { color: var(--muted); font-weight: 600; font-size: 12px; }
+.list-total-foot #listTotalIn  { color: var(--green-deep); }
+.list-total-foot #listTotalOut { color: var(--coral-deep); }
+body.dark-mode .list-total-foot { background: var(--card); color: var(--ink); }
+
+.txn-item {
+    background: var(--card); border-radius: var(--r-md);
+    padding: 13px 16px 13px 18px;
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: var(--shadow-sm); transition: all 0.12s ease;
+    border-left: 4px solid transparent;
+}
+.txn-item.txn-in  { border-left-color: var(--green); }
+.txn-item.txn-out { border-left-color: var(--coral); }
+.txn-item:active { transform: scale(0.985); background: #FAFBFC; }
+
+.txn-name { font-weight: 700; font-size: 15px; margin-bottom: 3px; color: var(--ink); }
+.txn-meta { display: flex; gap: 10px; font-size: 11px; color: var(--muted-light); font-weight: 500; }
+.txn-amount { font-size: 17px; font-weight: 700; font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+.txn-amount.in  { color: var(--green-deep); }
+.txn-amount.out { color: var(--coral); }
+
+/* ============================================ FLEX ROW */
+.flex-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+
+/* ============================================ TOAST & MINI CARD */
+.toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 12px 22px;
+    border-radius: var(--r-full); font-size: 14px; z-index: 2000;
+    opacity: 0; transition: opacity 0.2s ease;
+    pointer-events: none; white-space: nowrap; font-weight: 600;
+    box-shadow: var(--shadow-lg);
+}
+.mini-card {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 12px 22px;
+    border-radius: var(--r-full); font-size: 14px; z-index: 2000;
+    display: none; white-space: nowrap; font-weight: 600; box-shadow: var(--shadow-lg);
+}
+
+/* ============================================ SUCCESS POPUP */
+.success-popup {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card); border-radius: var(--r-lg);
+    padding: 28px 22px 22px; text-align: center;
+    z-index: 1200;
+    box-shadow: 0 24px 60px rgba(13,31,45,0.2), 0 4px 16px rgba(13,31,45,0.1);
+    min-width: 280px; max-width: 340px; width: calc(100% - 40px);
+    animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes popIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.success-popup .emoji { font-size: 52px; margin-bottom: 10px; display: block; }
+.success-popup .message { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--ink); }
+.success-popup .btn-group { display: flex; flex-direction: column; gap: 10px; }
+.success-popup .btn-group button {
+    width: 100%; padding: 14px; border-radius: var(--r-full);
+    font-weight: 700; font-size: 15px; border: none; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.overlay { position: fixed; inset: 0; background: rgba(13,31,45,0.5); z-index: 1199; display: none; }
+
+/* ============================================ MODALS */
+.modal, .confirm-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(13,31,45,0.48);
+    align-items: center; justify-content: center; z-index: 1100;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.modal-card, .confirm-card {
+    background: var(--card); max-width: 92%; width: 400px;
+    border-radius: var(--r-lg); padding: 22px 20px; box-shadow: var(--shadow-lg);
+}
+.modal-detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; text-align: left; margin-bottom: 16px;
+}
+.modal-detail-item strong, .modal-reason strong {
+    color: var(--green-deep); display: block;
+    font-size: 10px; margin-bottom: 3px;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+}
+.modal-detail-item span, .modal-reason span { font-weight: 700; word-break: break-word; font-size: 15px; }
+.modal-reason { grid-column: span 2; }
+.modal-buttons, .confirm-buttons { display: flex; gap: 10px; margin-top: 16px; }
+.modal-buttons button, .confirm-buttons button {
+    flex: 1; padding: 13px; border-radius: var(--r-full);
+    font-weight: 700; font-size: 14px; border: none; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.btn-close { background: var(--surface); color: var(--ink); }
+.btn-delete { background: var(--coral); color: white; }
+
+.empty-state {
+    text-align: center; padding: 44px 20px;
+    color: var(--muted-light); font-weight: 500; font-size: 15px; line-height: 1.7;
+}
+
+/* ============================================ DARK MODE */
+body.dark-mode {
+    --ink: #E6EDF3; --surface: #0D1117; --card: #161B22;
+    --paper: #161B22; --border: #30363D; --muted: #8B949E; --muted-light: #6E7681;
+    background: var(--surface); color: var(--ink);
+}
+body.dark-mode .hero-card, body.dark-mode .summary-card {
+    background: linear-gradient(145deg, #090D12 0%, #0A1929 55%, #061A20 100%);
+}
+body.dark-mode .hero-card .hero-balance-num,
+body.dark-mode .summary-card .balance-number { color: var(--gold) !important; }
+body.dark-mode .hero-card .hero-meta,
+body.dark-mode .hero-card .hero-balance-label,
+body.dark-mode .summary-card #availableBalanceLabel,
+body.dark-mode .summary-card .total-row { color: rgba(255,255,255,0.5) !important; }
+body.dark-mode .hero-card .hero-name { color: white !important; }
+body.dark-mode .hero-card .hero-stat-num.hs-in,
+body.dark-mode .summary-card .indicator-in { color: #5DFFC7 !important; }
+body.dark-mode .hero-card .hero-stat-num.hs-out,
+body.dark-mode .summary-card .indicator-out { color: #FF8A80 !important; }
+body.dark-mode .hero-card .hero-stats { background: rgba(255,255,255,0.07) !important; }
+body.dark-mode .hero-card .hero-stat + .hero-stat::before { background: rgba(255,255,255,0.1) !important; }
+body.dark-mode .entry-top {
+    background: linear-gradient(155deg, #0E1F1A 0%, #102821 60%, #0C2018 100%) !important;
+    border-bottom-color: rgba(0,200,150,0.18) !important;
+}
+body.dark-mode .entry-top.et-out {
+    background: linear-gradient(155deg, #25120F 0%, #2B1310 60%, #1F0D0B 100%) !important;
+    border-bottom-color: rgba(255,80,71,0.18) !important;
+}
+body.dark-mode .et-title, body.dark-mode .et-num { color: var(--ink) !important; }
+body.dark-mode .et-badge { background: rgba(0,200,150,0.14) !important; color: #5DFFC7 !important; }
+body.dark-mode .entry-top.et-out .et-badge { background: rgba(255,80,71,0.14) !important; color: #FF8A80 !important; }
+body.dark-mode .qchip { background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.12) !important; color: rgba(255,255,255,0.7) !important; }
+body.dark-mode .entry-top.et-out .qchip { color: rgba(255,255,255,0.7) !important; }
+body.dark-mode .back-btn, body.dark-mode .top-icon-btn { background: var(--card) !important; color: var(--ink) !important; }
+body.dark-mode .btn-large { background: var(--card) !important; color: var(--ink) !important; }
+body.dark-mode .bl-label { color: var(--ink) !important; }
+body.dark-mode input, body.dark-mode select { background: #0D1117 !important; color: var(--ink) !important; border-color: var(--border) !important; }
+body.dark-mode input:focus { background: #161B22 !important; }
+body.dark-mode .mode-buttons { background: #0D1117; }
+body.dark-mode .mode-btn.active { background: var(--card); color: var(--ink); }
+body.dark-mode .success-popup { background: var(--card); }
+body.dark-mode .success-popup .message { color: var(--ink); }
+body.dark-mode .modal-card, body.dark-mode .confirm-card { background: var(--card); }
+body.dark-mode .btn-close { background: var(--surface); color: var(--ink); }
+body.dark-mode .btn-secondary { background: #21262D; color: var(--ink); }
+body.dark-mode .lang-btn { background: var(--surface); border-color: var(--border); color: var(--ink); }
+body.dark-mode .onboard-card { background: var(--card); }
+body.dark-mode .form-card { background: #0F141A; border-color: var(--border); }
+body.dark-mode .total-row { color: rgba(230,237,243,0.55); }
+body.dark-mode .txn-name { color: var(--ink); }
+body.dark-mode .txn-item { background: var(--card); }
+body.dark-mode .overlay { background: rgba(0,0,0,0.7); }
+body.dark-mode .card { background: var(--card); color: var(--ink); }
+body.dark-mode .amount-screen { background: #060A0F; }
+
+/* ============================================ NOTIFICATION BANNER */
+.notif-perm-banner {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border-radius: var(--r-lg);
+    padding: 22px 20px 18px; box-shadow: var(--shadow-lg);
+    z-index: 1300; max-width: 360px; width: calc(100% - 32px);
+    text-align: center; animation: slideUpBanner 0.3s ease; display: none;
+}
+@keyframes slideUpBanner {
+    from { opacity: 0; transform: translateX(-50%) translateY(24px) scale(0.96); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.notif-perm-banner .banner-icon { font-size: 40px; margin-bottom: 8px; display: block; }
+.notif-perm-banner .banner-title { font-size: 17px; font-weight: 700; margin-bottom: 5px; color: var(--ink); }
+.notif-perm-banner .banner-desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+.notif-perm-banner .banner-actions { display: flex; gap: 10px; }
+.notif-perm-banner .banner-actions button {
+    flex: 1; padding: 13px 0; border-radius: var(--r-full);
+    font-weight: 700; font-size: 15px; border: none; cursor: pointer;
+    transition: all 0.15s ease; font-family: 'Space Grotesk', sans-serif;
+}
+.notif-perm-banner .banner-actions .btn-yes { background: var(--green); color: white; }
+.notif-perm-banner .banner-actions .btn-yes:active { transform: scale(0.96); background: var(--green-deep); }
+.notif-perm-banner .banner-actions .btn-no { background: var(--surface); color: var(--ink); }
+.notif-perm-banner .banner-actions .btn-no:active { transform: scale(0.96); }
+.notif-overlay {
+    position: fixed; inset: 0; background: rgba(13,31,45,0.42);
+    z-index: 1299; display: none; backdrop-filter: blur(3px);
+    animation: fadeOverlay 0.2s ease;
+}
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+body.dark-mode .notif-perm-banner { background: var(--card); }
+body.dark-mode .notif-perm-banner .banner-title { color: var(--ink); }
+body.dark-mode .notif-perm-banner .banner-desc { color: var(--muted); }
+body.dark-mode .notif-perm-banner .banner-actions .btn-no { background: #21262D; color: var(--ink); }
+body.dark-mode .notif-overlay { background: rgba(0,0,0,0.65); }
+
+/* ============================================ REMINDER VIEW */
+
+.status-pill {
+    font-size: 11px; padding: 3px 12px; border-radius: var(--r-full);
+    font-weight: 700; display: inline-block;
+}
+.status-pill.active  { background: rgba(0,200,150,0.12); color: var(--green-deep); }
+.status-pill.expired { background: rgba(255,80,71,0.1);  color: var(--coral-deep); }
+body.dark-mode .status-pill.active  { background: #1a3a2a; color: #5DFFC7; }
+body.dark-mode .status-pill.expired { background: #3a1a1a; color: #FF8A80; }
+body.dark-mode #reminderDetailModal .modal-card,
+body.dark-mode #transactionModal .modal-card { background: var(--card); color: var(--ink); }
+body.dark-mode #reminderDetailModal .modal-card div[style*="background:#f7f7f7"],
+body.dark-mode #transactionModal .modal-card div[style*="background:#f7f7f7"] { background: #0D1117 !important; }
+body.dark-mode #reminderDetailModal .modal-card div[style*="background:#f7f7f7"] div,
+body.dark-mode #transactionModal .modal-card div[style*="background:#f7f7f7"] div { color: var(--ink) !important; }
+body.dark-mode #reminderDetailModal .modal-card div[style*="border-top:1px solid #eee"],
+body.dark-mode #transactionModal .modal-card div[style*="border-top:1px solid #eee"] { border-top-color: var(--border) !important; }
+
+/* ============================================================
+   EXTRAORDINARY v7.0 — Entry Form Redesign
+   Ghost input · Floating labels · Quick chips · Sticky bar
+============================================================ */
+
+/* --- ENTRY WRAP (container for top dark zone + white body) --- */
+.entry-wrap { overflow: hidden; border-radius: var(--r-lg); margin-bottom: 6px; isolation: isolate; }
+
+/* --- ENTRY TOP (light tinted amount zone) --- */
+.entry-top {
+    background: linear-gradient(155deg, #EAFBF4 0%, #DFF6EC 60%, #D8F2E6 100%);
+    padding: 20px 20px 18px; position: relative; overflow: hidden; cursor: text;
+    border-bottom: 1px solid rgba(0,150,110,0.12);
+    border-radius: var(--r-lg) var(--r-lg) 0 0; /* explicit — fixes corner-clip bug in some WebViews */
+}
+.entry-top.et-out {
+    background: linear-gradient(155deg, #FFF0EE 0%, #FFE6E3 60%, #FFDFDB 100%);
+    border-bottom: 1px solid rgba(220,60,50,0.12);
+}
+.entry-top::before {
+    content: ''; position: absolute; top: -45px; right: -35px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,200,150,0.14) 0%, transparent 68%);
+    pointer-events: none;
+}
+.entry-top.et-out::before {
+    background: radial-gradient(circle, rgba(255,80,71,0.14) 0%, transparent 68%);
+}
+
+/* Type header row */
+.et-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.et-title { font-size: 15px; font-weight: 800; color: var(--ink); flex: 1; }
+.et-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--green-deep); background: rgba(0,150,110,0.1);
+    padding: 3px 9px; border-radius: 6px;
+}
+.entry-top.et-out .et-badge { color: var(--coral-deep); background: rgba(220,60,50,0.1); }
+
+/* Ghost input + big amount display layer */
+.et-amount-zone {
+    position: relative; padding: 2px 0 16px;
+}
+.et-amount-row {
+    display: flex; align-items: baseline; gap: 4px;
+    pointer-events: none; position: relative; z-index: 1;
+}
+.et-rupee {
+    font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace;
+    color: var(--green-deep); line-height: 1;
+}
+.entry-top.et-out .et-rupee { color: var(--coral-deep); }
+.et-num {
+    font-size: 46px; font-weight: 700; font-family: 'DM Mono', monospace;
+    letter-spacing: -2px; line-height: 1; color: var(--ink);
+}
+/* Ghost cursor — shows when input focused */
+.et-cursor {
+    display: inline-block; width: 2.5px; height: 34px; background: var(--green);
+    border-radius: 2px; margin-left: 3px; vertical-align: bottom;
+    animation: blink 1.1s step-end infinite; opacity: 0;
+}
+.entry-top.et-out .et-cursor { background: var(--coral); }
+.entry-top.as-focused .et-cursor { opacity: 1; }
+/* Ghost amount input — invisible but receives keyboard on tap */
+.ghost-input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; border: none !important; background: transparent !important;
+    cursor: text; font-size: 42px; padding: 0 !important; margin: 0 !important;
+    box-shadow: none !important; z-index: 2; -webkit-appearance: none;
+}
+/* Entry top focus ring */
+.entry-top.as-focused {
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.3) inset;
+}
+.entry-top.et-out.as-focused {
+    box-shadow: 0 0 0 3px rgba(255,80,71,0.3) inset;
+}
+
+/* Quick amount chips (inside light zone) */
+.quick-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.qchip {
+    background: rgba(255,255,255,0.7); border: 1px solid rgba(0,100,70,0.15);
+    color: var(--green-deep); font-size: 12px; font-weight: 700;
+    padding: 5px 12px; border-radius: 999px; cursor: pointer;
+    transition: all 0.12s ease; font-family: 'DM Mono', monospace; letter-spacing: -0.3px;
+    -webkit-tap-highlight-color: transparent;
+}
+.entry-top.et-out .qchip {
+    border-color: rgba(180,40,30,0.15); color: var(--coral-deep);
+}
+.qchip:active {
+    background: var(--green); border-color: var(--green);
+    color: white; transform: scale(0.88);
+}
+.entry-top.et-out .qchip:active {
+    background: var(--coral); border-color: var(--coral); color: white;
+}
+
+/* --- ENTRY BODY (white form section) --- */
+.entry-body {
+    background: var(--paper); padding: 20px 18px 100px;
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+body.dark-mode .entry-body { background: var(--paper); }
+
+/* Floating label input wrapper */
+.field-wrap { position: relative; margin-bottom: 14px; }
+.field-input {
+    width: 100%; padding: 20px 14px 8px;
+    font-size: 16px; font-weight: 600; letter-spacing: -0.2px;
+    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    background: white; color: var(--ink); outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    font-family: 'Space Grotesk', sans-serif; margin: 0;
+}
+.field-input:focus { border-color: var(--green); box-shadow: 0 0 0 3.5px rgba(0,200,150,0.1); }
+.et-out + .entry-body .field-input:focus,
+#paymentOutView .field-input:focus  { border-color: var(--coral); box-shadow: 0 0 0 3.5px rgba(255,80,71,0.1); }
+.field-label {
+    position: absolute; top: 14px; left: 14px;
+    font-size: 14px; font-weight: 600; color: var(--muted);
+    pointer-events: none;
+    transition: top 0.16s ease, font-size 0.16s ease, color 0.16s ease, letter-spacing 0.16s ease;
+}
+/* Float label up when focused or filled */
+.field-input:focus + .field-label,
+.field-input:not(:placeholder-shown) + .field-label {
+    top: 5px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4px; text-transform: uppercase; color: var(--green);
+}
+#paymentOutView .field-input:focus + .field-label,
+#paymentOutView .field-input:not(:placeholder-shown) + .field-label { color: var(--coral); }
+/* Date + time inputs always show label floated */
+input[type="date"].field-input + .field-label,
+input[type="time"].field-input + .field-label {
+    top: 5px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4px; text-transform: uppercase; color: var(--green);
+}
+#paymentOutView input[type="date"].field-input + .field-label { color: var(--coral); }
+
+/* Dark mode field inputs */
+body.dark-mode .field-input { background: #0D1117; border-color: var(--border); color: var(--ink); }
+body.dark-mode .field-input:focus { background: #161B22; }
+
+/* Two-column row */
+.two-col { display: flex; gap: 10px; margin-bottom: 14px; align-items: flex-start; }
+.two-col .field-wrap { flex: 1; margin-bottom: 0; }
+
+/* Mode selector (premium segmented style) */
+.mode-seg {
+    background: var(--surface); border-radius: var(--r-md);
+    padding: 4px; display: flex; gap: 3px; flex-shrink: 0;
+    align-self: stretch;
+}
+.mode-seg .mode-btn {
+    background: transparent; border: none; border-radius: calc(var(--r-md) - 4px);
+    padding: 8px 11px; font-size: 12px; font-weight: 700; color: var(--muted);
+    cursor: pointer; transition: all 0.18s ease;
+    font-family: 'Space Grotesk', sans-serif; white-space: nowrap;
+}
+.mode-seg .mode-btn.active {
+    background: white; color: var(--green); box-shadow: 0 2px 7px rgba(0,0,0,0.1);
+}
+#paymentOutView .mode-seg .mode-btn.active { color: var(--coral); }
+body.dark-mode .mode-seg { background: #0D1117; }
+body.dark-mode .mode-seg .mode-btn.active { background: var(--card); }
+
+/* --- STICKY SAVE BAR --- */
+.sticky-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 440px;
+    padding: 10px 16px 24px;
+    background: linear-gradient(to top, var(--paper) 55%, transparent);
+    z-index: 200; pointer-events: none;
+}
+.save-fab {
+    width: 100%; pointer-events: all;
+    background: var(--green); border: none; border-radius: var(--r-full);
+    padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: all 0.18s ease;
+    font-family: 'Space Grotesk', sans-serif;
+    box-shadow: 0 6px 24px rgba(0,200,150,0.38), 0 2px 6px rgba(0,0,0,0.1);
+}
+.save-fab:active { transform: scale(0.97); box-shadow: none; background: var(--green-deep); }
+.save-fab.sb-out {
+    background: var(--coral);
+    box-shadow: 0 6px 24px rgba(255,80,71,0.38), 0 2px 6px rgba(0,0,0,0.1);
+}
+.save-fab.sb-out:active { background: var(--coral-deep); }
+.sb-icon { font-size: 22px; flex-shrink: 0; }
+.sb-label { font-size: 15px; font-weight: 700; color: white; flex: 1; text-align: center; }
+.sb-amt {
+    font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 600;
+    color: rgba(255,255,255,0.78); letter-spacing: -0.3px; flex-shrink: 0;
+}
+body.dark-mode .sticky-bar { background: linear-gradient(to top, var(--paper) 55%, transparent); }
+
+/* Reminder modal redesign */
+.rmd-card { padding: 22px 20px !important; }
+.rmd-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.rmd-icon { font-size: 36px; line-height: 1; }
+.rmd-header-text { flex: 1; }
+.rmd-title { font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+.rmd-sub { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.rmd-x {
+    background: var(--surface); border: none; width: 32px; height: 32px;
+    border-radius: 50%; font-size: 14px; cursor: pointer;
+    color: var(--muted); font-weight: 700; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.rmd-x:active { background: var(--border); }
+.rmd-field-row { display: flex; gap: 10px; }
+.rmd-field-row .field-wrap { flex: 1; }
+#reminderModal .field-input:focus + .field-label,
+#reminderModal .field-input:not(:placeholder-shown) + .field-label,
+#reminderModal input[type="date"].field-input + .field-label,
+#reminderModal input[type="time"].field-input + .field-label {
+    color: var(--indigo);
+}
+#reminderModal .field-input:focus { border-color: var(--indigo); box-shadow: 0 0 0 3.5px rgba(99,102,241,0.1); }
+body.dark-mode .rmd-x { background: var(--card); color: var(--muted); }
+body.dark-mode .rmd-title { color: var(--ink); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER SECTION -->
+        <div class="header">
+            <button class="back-btn" id="backBtn" style="display: none;">←</button>
+            <h1 id="mainTitle">Simple Cash Book</h1>
+            <div class="top-right-buttons" id="topRightButtons" style="display: none;">
+                <button class="top-icon-btn" id="shareBtn">📤 Share</button>
+                <button class="top-icon-btn" id="rateUsBtn">⭐ Rate Us</button>
+                <button class="top-icon-btn" id="darkModeBtn">🌙 Dark</button>
+                <button class="top-icon-btn" id="langTopBtn">🌐 Language</button>
+            </div>
+        </div>
+
+        <!-- LANGUAGE SELECTION VIEW -->
+        <div id="langView" class="view">
+            <div class="onboard-card">
+                <div class="onboard-icon">📚</div>
+                <div class="onboard-title" id="langMsg">Please Select Your Language</div>
+                <div class="onboard-sub">Choose the language you're most comfortable with</div>
+                <div class="lang-btn-list">
+                    <button class="lang-btn" data-lang="en"><span class="lb-flag">🇬🇧</span> English <span class="lb-arrow">→</span></button>
+                    <button class="lang-btn" data-lang="hi"><span class="lb-flag">🇮🇳</span> हिंदी <span class="lb-arrow">→</span></button>
+                    <button class="lang-btn" data-lang="mr"><span class="lb-flag">🇮🇳</span> मराठी <span class="lb-arrow">→</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAME ENTRY VIEW -->
+        <div id="nameView" class="view">
+            <div class="onboard-card">
+                <div class="onboard-icon">👋</div>
+                <div class="onboard-title">Welcome!</div>
+                <div class="onboard-sub" id="nameLabel">Enter your name to get started</div>
+                <div class="field-wrap">
+                    <input type="text" id="userName" class="field-input" placeholder=" " autocomplete="off" />
+                    <label class="field-label">✏️ Your Name</label>
+                </div>
+                <button class="btn-primary" id="continueBtn">Continue →</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboardView" class="view">
+            <!-- Hero card: name + live balance -->
+            <div class="hero-card">
+                <div class="hero-meta" id="heroDashDate"></div>
+                <div class="hero-name" id="welcomeMsg">Welcome 💌</div>
+                <div class="hero-balance-label">Available Balance</div>
+                <div class="hero-balance-num" id="dashBalance">₹0.00</div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-label">Money In</div>
+                        <div class="hero-stat-num hs-in" id="dashTotalIn">₹0.00</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-label">Money Out</div>
+                        <div class="hero-stat-num hs-out" id="dashTotalOut">₹0.00</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 2×2 action grid -->
+            <div class="dashboard-buttons">
+                <button class="btn-large bl-in" id="paymentInBtn">
+                    <span class="bl-icon">💰</span>
+                    <span class="bl-label"><span id="dashPaymentIn">Payment In</span></span>
+                    <span class="bl-sub">Add money received</span>
+                </button>
+                <button class="btn-large bl-out" id="paymentOutBtn">
+                    <span class="bl-icon">💸</span>
+                    <span class="bl-label"><span id="dashPaymentOut">Payment Out</span></span>
+                    <span class="bl-sub">Add expense</span>
+                </button>
+                <button class="btn-large bl-details" id="seeDetailsBtn">
+                    <span class="bl-icon">📊</span>
+                    <span class="bl-label"><span id="dashSeeDetails">See Details</span></span>
+                    <span class="bl-sub">Full ledger</span>
+                </button>
+                <button class="btn-large bl-remind" id="reminderBtn">
+                    <span class="bl-icon">🔔</span>
+                    <span class="bl-label">Reminders</span>
+                    <span class="bl-sub">Set alerts</span>
+                </button>
+            </div>
+            <div class="dash-edit-wrap">
+                <button class="btn-secondary" id="editNameBtn">✏️ Edit Name</button>
+            </div>
+        </div>
+
+        <!-- REMINDER VIEW -->
+        <div id="reminderView" class="view">
+            <button class="btn-primary" id="addReminderOpenBtn" style="margin-bottom:14px;">➕ Add Reminder</button>
+
+            <div class="rem-filter-row" id="remFilterRow">
+                <button class="rfchip active" data-filter="today">Today</button>
+                <button class="rfchip" data-filter="tomorrow">Tomorrow</button>
+                <button class="rfchip" data-filter="week">This Week</button>
+                <button class="rfchip" data-filter="month">This Month</button>
+                <button class="rfchip" data-filter="all">All</button>
+            </div>
+
+            <div id="reminderList" class="txn-list" style="height: calc(100vh - 280px);"></div>
+        </div>
+
+        <!-- PAYMENT IN VIEW -->
+        <div id="paymentInView" class="view">
+            <div class="entry-wrap">
+                <!-- DARK AMOUNT TOP — tap to type -->
+                <div class="entry-top et-in" id="inAmountScreen">
+                    <div class="et-header">
+                        <span class="et-title" id="paymentInTitle">Payment In</span>
+                        <span class="et-badge">NEW ENTRY</span>
+                    </div>
+                    <div class="et-amount-zone" id="inAmountZone">
+                        <div class="et-amount-row">
+                            <span class="et-rupee">₹</span>
+                            <span class="et-num" id="inAmountDisplay" style="opacity:0.3;">0</span>
+                            <span class="et-cursor"></span>
+                        </div>
+                        <!-- Ghost input — invisible, receives keyboard on tap -->
+                        <input type="number" class="ghost-input" id="inAmount" step="0.01" min="0.01" placeholder="0" />
+                    </div>
+                    <!-- Quick amount chips -->
+                    <div class="quick-chips">
+                        <button class="qchip" data-for="in" data-amt="100">₹100</button>
+                        <button class="qchip" data-for="in" data-amt="500">₹500</button>
+                        <button class="qchip" data-for="in" data-amt="1000">₹1K</button>
+                        <button class="qchip" data-for="in" data-amt="5000">₹5K</button>
+                        <button class="qchip" data-for="in" data-amt="10000">₹10K</button>
+                    </div>
+                </div>
+                <!-- WHITE FORM BODY -->
+                <div class="entry-body">
+                    <div class="field-wrap">
+                        <input type="text" id="inName" class="field-input" placeholder=" " autocomplete="off" />
+                        <label class="field-label" id="inNameLabel">📌 Enter Title</label>
+                    </div>
+                    <div class="two-col">
+                        <div class="field-wrap">
+                            <input type="date" id="inDate" class="field-input" />
+                            <label class="field-label" id="inDateLabel">📅 Date</label>
+                        </div>
+                        <div class="mode-seg" id="inModeGroup">
+                            <button type="button" class="mode-btn active" data-mode="Cash">💵 Cash</button>
+                            <button type="button" class="mode-btn" data-mode="Online">⚡ Online</button>
+                        </div>
+                    </div>
+                    <div class="field-wrap">
+                        <input type="text" id="inReason" class="field-input" placeholder=" " autocomplete="off" />
+                        <label class="field-label" id="inReasonLabel">💬 Reason (optional)</label>
+                    </div>
+                </div>
+            </div>
+            <!-- STICKY SAVE BAR -->
+            <div class="sticky-bar">
+                <button class="save-fab sb-in" id="saveInBtn">
+                    <span class="sb-icon">💰</span>
+                    <span class="sb-label" id="saveInBtnLabel">Save Payment In</span>
+                    <span class="sb-amt" id="saveInBtnAmt">₹0.00</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAYMENT OUT VIEW -->
+        <div id="paymentOutView" class="view">
+            <div class="entry-wrap">
+                <!-- DARK AMOUNT TOP -->
+                <div class="entry-top et-out" id="outAmountScreen">
+                    <div class="et-header">
+                        <span class="et-title" id="paymentOutTitle">Payment Out</span>
+                        <span class="et-badge">NEW ENTRY</span>
+                    </div>
+                    <div class="et-amount-zone" id="outAmountZone">
+                        <div class="et-amount-row">
+                            <span class="et-rupee" style="color:#FF8A80;">₹</span>
+                            <span class="et-num" id="outAmountDisplay" style="opacity:0.3;">0</span>
+                            <span class="et-cursor" style="background:var(--coral);"></span>
+                        </div>
+                        <input type="number" class="ghost-input" id="outAmount" step="0.01" min="0.01" placeholder="0" />
+                    </div>
+                    <div class="quick-chips">
+                        <button class="qchip" data-for="out" data-amt="100">₹100</button>
+                        <button class="qchip" data-for="out" data-amt="500">₹500</button>
+                        <button class="qchip" data-for="out" data-amt="1000">₹1K</button>
+                        <button class="qchip" data-for="out" data-amt="5000">₹5K</button>
+                        <button class="qchip" data-for="out" data-amt="10000">₹10K</button>
+                    </div>
+                </div>
+                <!-- WHITE FORM BODY -->
+                <div class="entry-body">
+                    <div class="field-wrap">
+                        <input type="text" id="outName" class="field-input" placeholder=" " autocomplete="off" />
+                        <label class="field-label" id="outNameLabel">📌 Enter Title</label>
+                    </div>
+                    <div class="two-col">
+                        <div class="field-wrap">
+                            <input type="date" id="outDate" class="field-input" />
+                            <label class="field-label" id="outDateLabel">📅 Date</label>
+                        </div>
+                        <div class="mode-seg" id="outModeGroup">
+                            <button type="button" class="mode-btn active" data-mode="Cash">💵 Cash</button>
+                            <button type="button" class="mode-btn" data-mode="Online">⚡ Online</button>
+                        </div>
+                    </div>
+                    <div class="field-wrap">
+                        <input type="text" id="outReason" class="field-input" placeholder=" " autocomplete="off" />
+                        <label class="field-label" id="outReasonLabel">💬 Reason (optional)</label>
+                    </div>
+                </div>
+            </div>
+            <!-- STICKY SAVE BAR -->
+            <div class="sticky-bar">
+                <button class="save-fab sb-out" id="saveOutBtn">
+                    <span class="sb-icon">💸</span>
+                    <span class="sb-label" id="saveOutBtnLabel">Save Payment Out</span>
+                    <span class="sb-amt" id="saveOutBtnAmt">₹0.00</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- DETAILS VIEW -->
+        <div id="detailsView" class="view">
+            <div class="details-sticky-head">
+                <div class="summary-card">
+                    <div class="indicator-row">
+                        <span class="indicator-in">🟢 <span id="indicatorInText">Payment In</span></span>
+                        <span class="indicator-out">🔴 <span id="indicatorOutText">Payment Out</span></span>
+                    </div>
+                    <div id="availableBalanceLabel" style="font-weight: 500; font-size: 14px; color: #666;">Available Balance</div>
+                    <div class="balance-number" id="balanceAmount">₹0</div>
+                    <div class="total-row">
+                        <span id="totalInLabel">Total In</span>
+                        <span id="totalInSpan">₹0</span>
+                    </div>
+                    <div class="total-row">
+                        <span id="totalOutLabel">Total Out</span>
+                        <span id="totalOutSpan">₹0</span>
+                    </div>
+                </div>
+
+                <div class="flex-row">
+                    <input type="text" id="searchInput" placeholder="🔍 Search by name or reason" style="margin-bottom:0;flex:1;" />
+                    <button class="btn-secondary" id="filterBtn">Filter</button>
+                    <button class="btn-secondary" id="backupBtn">Backup</button>
+                    <button class="btn-secondary" id="restoreBtn">Restore</button>
+                </div>
+
+                <div id="activeFilterBadge" style="display:none;margin-bottom:0;"></div>
+            </div>
+
+            <div id="txnList" class="txn-list">
+                <div class="empty-state">✨ No transactions yet</div>
+            </div>
+
+            <div class="list-total-foot">
+                <span class="ltf-pair"><span id="listTotalInLabel">Total In</span> <span id="listTotalIn">₹0</span></span>
+                <span class="ltf-pair"><span id="listTotalOutLabel">Total Out</span> <span id="listTotalOut">₹0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST & MINI CARD -->
+    <div id="toastMsg" class="toast"></div>
+    <div id="miniCard" class="mini-card"></div>
+
+    <!-- OVERLAY & SUCCESS POPUP -->
+    <div id="overlay" class="overlay"></div>
+    <div id="successPopup" class="success-popup" style="display:none;">
+        <div class="emoji">👍</div>
+        <div class="message" id="successMessage">Entry Saved!</div>
+        <div class="btn-group">
+            <button id="addAnotherBtn" class="btn-secondary">Create Another Entry</button>
+            <button id="backToDashboardBtn" class="btn-primary">Back</button>
+        </div>
+    </div>
+
+    <!-- TRANSACTION DETAILS MODAL -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-card">
+            <h3 id="modalTitle" style="margin-bottom:16px;font-size:20px;font-weight:700;text-align:center;">Transaction</h3>
+            <div id="modalContent"></div>
+            <div class="modal-buttons">
+                <button class="btn-close" id="closeModalBtn">Close</button>
+                <button class="btn-delete" id="deleteModalBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM MODAL -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-card">
+            <p id="confirmMsg" style="font-size:18px;margin:16px 0;">Are you sure?</p>
+            <div class="confirm-buttons">
+                <button class="btn-secondary" id="confirmNoBtn">Cancel</button>
+                <button class="btn-primary" id="confirmYesBtn" style="background:#FF6B4A;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER MODAL -->
+    <div id="filterModal" class="modal">
+        <div class="modal-card">
+            <h3>Filter Transactions</h3>
+            <div class="flex-row">
+                <button class="btn-secondary fbtn" data-filter="ALL">All</button>
+                <button class="btn-secondary fbtn" data-filter="Payment In">Payment In</button>
+                <button class="btn-secondary fbtn" data-filter="Payment Out">Payment Out</button>
+                <button class="btn-secondary fbtn" data-filter="Cash">Cash</button>
+                <button class="btn-secondary fbtn" data-filter="Online">Online</button>
+                <button class="btn-secondary fbtn" data-filter="THIS_MONTH">This Month</button>
+                <button class="btn-secondary fbtn" data-filter="LAST_MONTH">Last Month</button>
+                <button class="btn-secondary fbtn" data-filter="THIS_YEAR">This Year</button>
+                <button class="btn-secondary fbtn" data-filter="LAST_YEAR">Last Year</button>
+            </div>
+            <input type="date" id="filterDate" />
+            <div class="modal-buttons">
+                <button class="btn-close" id="clearFilterBtn">Clear</button>
+                <button class="btn-delete" id="applyDateBtn">Apply Date</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT NAME MODAL -->
+    <div id="editNameModal" class="modal">
+        <div class="modal-card">
+            <h3>Edit Name</h3>
+            <input type="text" id="editNameInput" />
+            <div class="modal-buttons">
+                <button class="btn-close" id="closeNameBtn">Cancel</button>
+                <button class="btn-delete" id="saveNameBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REMINDER ADD MODAL -->
+    <div id="reminderModal" class="modal">
+        <div class="modal-card rmd-card">
+            <div class="rmd-header">
+                <span class="rmd-icon">⏰</span>
+                <div class="rmd-header-text">
+                    <div class="rmd-title">New Reminder</div>
+                    <div class="rmd-sub">Set a cash reminder for later</div>
+                </div>
+                <button class="rmd-x" id="cancelReminderBtn">✕</button>
+            </div>
+            <div id="reminderError" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:12px;background:#fff0f0;color:#d32f2f;font-weight:600;font-size:13px;"></div>
+            <div class="field-wrap">
+                <input type="text" class="field-input" id="remTitle" placeholder=" " />
+                <label class="field-label">📌 Title</label>
+            </div>
+            <div class="rmd-field-row">
+                <div class="field-wrap">
+                    <input type="date" class="field-input" id="remDate" />
+                    <label class="field-label">📅 Date</label>
+                </div>
+                <div class="field-wrap">
+                    <input type="time" class="field-input" id="remTime" placeholder=" " />
+                    <label class="field-label">⏰ Time</label>
+                </div>
+            </div>
+            <div class="field-wrap">
+                <input type="text" class="field-input" id="remDetails" placeholder=" " />
+                <label class="field-label">📝 Details (optional)</label>
+            </div>
+            <button class="btn-primary" id="saveReminderBtn" style="margin-top:6px;">✓ Save Reminder</button>
+        </div>
+    </div>
+
+    <!-- REMINDER DETAIL MODAL -->
+    <div id="reminderDetailModal" class="modal">
+        <div class="modal-card">
+            <h3 id="remDetailTitle" style="text-align:center;"></h3>
+            <div id="remDetailBody"></div>
+            <div class="modal-buttons">
+                <button class="btn-close" id="closeReminderDetail">Close</button>
+                <button class="btn-delete" id="deleteReminderBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+    CUSTOM NOTIFICATION PERMISSION BANNER
+    ============================================ -->
+    <div class="notif-overlay" id="notifOverlay"></div>
+    <div class="notif-perm-banner" id="notifPermBanner">
+        <span class="banner-icon">⏰</span>
+        <div class="banner-title">Allow Reminder Notification?</div>
+        <div class="banner-desc">
+            Get reminded on time — we'll send you a browser notification when your reminder is due.
+        </div>
+        <div class="banner-actions">
+            <button class="btn-no" id="notifNoBtn">No</button>
+            <button class="btn-yes" id="notifYesBtn">Yes</button>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================
+           SIMPLE CASH BOOK - COMPLETE PWA
+           Version: 6.0 | Fixed Backup with Share
+           ============================================ */
+
+        // ==================== DATA STORAGE ====================
+        let currentLanguage = 'en';
+        let userName = localStorage.getItem('cashbook_userName') || '';
+        let transactions = JSON.parse(localStorage.getItem('cashbook_transactions') || '[]');
+
+        // ==================== FILTER STATE (declared early) ====================
+        // Must be before renderDetailsView so unified function can close over them
+        let activeFilter = 'ALL';
+        let monthFilterActive = null;
+        let yearFilterActive = null;
+
+        // ==================== DATE HELPER FUNCTIONS ====================
+        function isoToDisplay(isoDate) {
+            if (!isoDate || isoDate === '') return '';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function getTodayISO() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // ==================== TRANSLATIONS ====================
+        const translations = {
+            en: {
+                langMsg: "Please Select Your Language",
+                nameLabel: "Enter your name",
+                entryTitleLabel: "Enter Title",
+                continue: "Continue →",
+                welcome: "Welcome",
+                seeDetails: "See Details",
+                paymentIn: "Payment In",
+                paymentOut: "Payment Out",
+                saveIn: "Save Payment In",
+                saveOut: "Save Payment Out",
+                deleteConfirm: "Delete this transaction?",
+                deleted: "Transaction deleted",
+                saved: "saved",
+                nameRequired: "Title is required",
+                amountPositive: "Amount must be greater than 0",
+                dateInvalid: "Please select a valid date",
+                exportSuccess: "Exported successfully",
+                importReplace: "Replace all existing transactions?",
+                importSuccess: "Import successful",
+                invalidJSON: "Invalid JSON file",
+                backupCreated: "Backup created successfully",
+                restoreMerge: "Restore backup (merge with existing records)?",
+                restored: "Restored",
+                invalidBackup: "Invalid backup file",
+                close: "Close",
+                delete: "Delete",
+                cancel: "Cancel",
+                searchPlaceholder: "🔍 Search by title or reason",
+                availableBalance: "Available Balance",
+                totalIn: "Total In",
+                totalOut: "Total Out",
+                transactions: "Transactions",
+                noTransactions: "✨ No transactions yet",
+                noMatches: "📭 No matching transactions",
+                date: "Date",
+                amount: "Amount",
+                mode: "Mode",
+                type: "Type",
+                reason: "Reason",
+                entrySaved: "Entry Saved!",
+                addAnother: "Create Another Entry",
+                back: "Back",
+                paymentInTitle: "💰 Payment In",
+                paymentOutTitle: "💸 Payment Out",
+                indicatorIn: "Payment In",
+                indicatorOut: "Payment Out",
+                language: "Language",
+                simpleCashBook: "Simple Cash Book",
+                share: "Share",
+                rateUs: "Rate Us",
+                exportBtn: "Export",
+                importBtn: "Import",
+                backupBtn: "Backup",
+                restoreBtn: "Restore"
+            },
+            hi: {
+                langMsg: "कृपया अपनी भाषा चुनें",
+                nameLabel: "अपना नाम दर्ज करें",
+                entryTitleLabel: "शीर्षक दर्ज करें",
+                continue: "जारी रखें →",
+                welcome: "स्वागत है",
+                seeDetails: "विवरण देखें",
+                paymentIn: "भुगतान प्राप्त",
+                paymentOut: "भुगतान दिया",
+                saveIn: "भुगतान प्राप्त सहेजें",
+                saveOut: "भुगतान दिया सहेजें",
+                deleteConfirm: "यह लेन-देन हटाएं?",
+                deleted: "लेन-देन हटा दिया गया",
+                saved: "सहेजा गया",
+                nameRequired: "शीर्षक आवश्यक है",
+                amountPositive: "राशि 0 से अधिक होनी चाहिए",
+                dateInvalid: "कृपया वैध तारीख चुनें",
+                exportSuccess: "निर्यात किया गया",
+                importReplace: "सभी मौजूदा लेन-देन बदलें?",
+                importSuccess: "आयात सफल",
+                invalidJSON: "अमान्य JSON फ़ाइल",
+                backupCreated: "बैकअप बनाया गया",
+                restoreMerge: "बैकअप पुनर्स्थापित करें (मौजूदा रिकॉर्ड के साथ मिलाएं)?",
+                restored: "पुनर्स्थापित किया गया",
+                invalidBackup: "अमान्य बैकअप फ़ाइल",
+                close: "बंद करें",
+                delete: "हटाएं",
+                cancel: "रद्द करें",
+                searchPlaceholder: "🔍 शीर्षक या कारण से खोजें",
+                availableBalance: "उपलब्ध शेष",
+                totalIn: "कुल प्राप्त",
+                totalOut: "कुल भुगतान",
+                transactions: "लेन-देन",
+                noTransactions: "✨ कोई लेन-देन नहीं",
+                noMatches: "📭 कोई मिलान नहीं",
+                date: "तारीख",
+                amount: "राशि",
+                mode: "मोड",
+                type: "प्रकार",
+                reason: "कारण",
+                entrySaved: "प्रविष्टि सहेजी गई!",
+                addAnother: "दूसरी प्रविष्टि बनाएं",
+                back: "वापस",
+                paymentInTitle: "💰 भुगतान प्राप्त",
+                paymentOutTitle: "💸 भुगतान दिया",
+                indicatorIn: "भुगतान प्राप्त",
+                indicatorOut: "भुगतान दिया",
+                language: "भाषा",
+                simpleCashBook: "सिंपल कैश बुक",
+                share: "साझा करें",
+                rateUs: "हमें रेट करें",
+                exportBtn: "निर्यात",
+                importBtn: "आयात",
+                backupBtn: "बैकअप",
+                restoreBtn: "पुनर्स्थापना"
+            },
+            mr: {
+                langMsg: "कृपया आपली भाषा निवडा",
+                nameLabel: "आपले नाव प्रविष्ट करा",
+                entryTitleLabel: "शीर्षक प्रविष्ट करा",
+                continue: "पुढे जा →",
+                welcome: "स्वागत आहे",
+                seeDetails: "तपशील पहा",
+                paymentIn: "पेमेंट प्राप्त",
+                paymentOut: "पेमेंट दिले",
+                saveIn: "पेमेंट प्राप्त जतन करा",
+                saveOut: "दिलेले पेमेंट जतन करा",
+                deleteConfirm: "हा व्यवहार हटवायचा?",
+                deleted: "व्यवहार हटविला",
+                saved: "जतन केले",
+                nameRequired: "शीर्षक आवश्यक आहे",
+                amountPositive: "रक्कम 0 पेक्षा जास्त असावी",
+                dateInvalid: "कृपया वैध तारीख निवडा",
+                exportSuccess: "निर्यात केले",
+                importReplace: "सर्व विद्यमान व्यवहार बदलायचे?",
+                importSuccess: "आयात यशस्वी",
+                invalidJSON: "अवैध JSON फाइल",
+                backupCreated: "बॅकअप तयार केला",
+                restoreMerge: "बॅकअप पुनर्संचयित करा (विद्यमान सह विलीन)?",
+                restored: "पुनर्संचयित केले",
+                invalidBackup: "अवैध बॅकअप फाइल",
+                close: "बंद करा",
+                delete: "हटवा",
+                cancel: "रद्द करा",
+                searchPlaceholder: "🔍 शीर्षक किंवा कारणाने शोधा",
+                availableBalance: "उपलब्ध शिल्लक",
+                totalIn: "एकूण प्राप्त",
+                totalOut: "एकूण दिले",
+                transactions: "व्यवहार",
+                noTransactions: "✨ कोणतेही व्यवहार नाहीत",
+                noMatches: "📭 कोणतीही जुळणी नाही",
+                date: "तारीख",
+                amount: "रक्कम",
+                mode: "मोड",
+                type: "प्रकार",
+                reason: "कारण",
+                entrySaved: "प्रविष्टी जतन केली!",
+                addAnother: "दुसरी प्रविष्टी तयार करा",
+                back: "मागे",
+                paymentInTitle: "💰 पेमेंट प्राप्त",
+                paymentOutTitle: "💸 पेमेंट दिले",
+                indicatorIn: "पेमेंट प्राप्त",
+                indicatorOut: "पेमेंट दिले",
+                language: "भाषा",
+                simpleCashBook: "सिंपल कॅश बुक",
+                share: "शेअर करा",
+                rateUs: "आम्हाला रेट करा",
+                exportBtn: "निर्यात",
+                importBtn: "आयात",
+                backupBtn: "बॅकअप",
+                restoreBtn: "पुनर्संचयित"
+            }
+        };
+
+        // ==================== HELPER FUNCTIONS ====================
+        function t(key) {
+            return translations[currentLanguage][key];
+        }
+
+        function saveAllData() {
+            localStorage.setItem('cashbook_transactions', JSON.stringify(transactions));
+            localStorage.setItem('cashbook_userName', userName);
+            localStorage.setItem('cashbook_language', currentLanguage);
+        }
+
+        function formatINR(amount) {
+            return '₹' + amount.toFixed(2);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toastMsg');
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function showMiniCard(message) {
+            const card = document.getElementById('miniCard');
+            card.innerHTML = `🗑️ ${message}`;
+            card.style.display = 'flex';
+            setTimeout(() => {
+                card.style.display = 'none';
+            }, 2000);
+        }
+
+        function showSuccessPopup(message, callback) {
+            const overlay = document.getElementById('overlay');
+            const popup = document.getElementById('successPopup');
+            const successMsg = document.getElementById('successMessage');
+
+            successMsg.innerText = message;
+            overlay.style.display = 'block';
+            popup.style.display = 'block';
+
+            const addAnotherBtn = document.getElementById('addAnotherBtn');
+            const backBtn = document.getElementById('backToDashboardBtn');
+
+            const cleanup = () => {
+                overlay.style.display = 'none';
+                popup.style.display = 'none';
+                addAnotherBtn.removeEventListener('click', addHandler);
+                backBtn.removeEventListener('click', backHandler);
+            };
+
+            const addHandler = () => {
+                cleanup();
+                if (callback) callback('addAnother');
+            };
+
+            const backHandler = () => {
+                cleanup();
+                if (callback) callback('back');
+            };
+
+            addAnotherBtn.addEventListener('click', addHandler);
+            backBtn.addEventListener('click', backHandler);
+        }
+
+        // ==================== CUSTOM CONFIRM MODAL ====================
+        function customConfirm(message) {
+            return new Promise((resolve) => {
+                const confirmModal = document.getElementById('confirmModal');
+                const confirmMsg = document.getElementById('confirmMsg');
+                const yesBtn = document.getElementById('confirmYesBtn');
+                const noBtn = document.getElementById('confirmNoBtn');
+
+                confirmMsg.innerText = message;
+                confirmModal.style.display = 'flex';
+
+                const handleYes = () => {
+                    confirmModal.style.display = 'none';
+                    cleanup();
+                    resolve(true);
+                };
+
+                const handleNo = () => {
+                    confirmModal.style.display = 'none';
+                    cleanup();
+                    resolve(false);
+                };
+
+                const cleanup = () => {
+                    yesBtn.removeEventListener('click', handleYes);
+                    noBtn.removeEventListener('click', handleNo);
+                };
+
+                yesBtn.addEventListener('click', handleYes);
+                noBtn.addEventListener('click', handleNo);
+            });
+        }
+
+        // ==================== UI LANGUAGE UPDATE ====================
+        function updateUILanguage() {
+            document.getElementById('mainTitle').innerText = t('simpleCashBook');
+            document.getElementById('shareBtn').innerHTML = `📤 ${t('share')}`;
+            document.getElementById('rateUsBtn').innerHTML = `⭐ ${t('rateUs')}`;
+            document.getElementById('langTopBtn').innerHTML = `🌐 ${t('language')}`;
+            document.getElementById('langMsg').innerText = t('langMsg');
+            document.getElementById('nameLabel').innerText = t('nameLabel');
+            document.getElementById('continueBtn').innerText = t('continue');
+            document.getElementById('dashSeeDetails').innerText = t('seeDetails');
+            document.getElementById('dashPaymentIn').innerText = t('paymentIn');
+            document.getElementById('dashPaymentOut').innerText = t('paymentOut');
+            document.getElementById('paymentInTitle').innerHTML = t('paymentInTitle');
+            document.getElementById('inDateLabel').innerText = t('date');
+            document.getElementById('inNameLabel').innerText = '📌 ' + t('entryTitleLabel');
+            document.getElementById('inReasonLabel').innerText = '💬 ' + t('reason');
+            const saveInLabel = document.getElementById('saveInBtnLabel');
+            if (saveInLabel) saveInLabel.innerText = t('saveIn');
+            document.getElementById('paymentOutTitle').innerHTML = t('paymentOutTitle');
+            document.getElementById('outDateLabel').innerText = t('date');
+            document.getElementById('outNameLabel').innerText = '📌 ' + t('entryTitleLabel');
+            document.getElementById('outReasonLabel').innerText = '💬 ' + t('reason');
+            const saveOutLabel = document.getElementById('saveOutBtnLabel');
+            if (saveOutLabel) saveOutLabel.innerText = t('saveOut');
+            document.getElementById('availableBalanceLabel').innerText = t('availableBalance');
+            document.getElementById('totalInLabel').innerText = t('totalIn');
+            document.getElementById('totalOutLabel').innerText = t('totalOut');
+            document.getElementById('listTotalInLabel').innerText = t('totalIn');
+            document.getElementById('listTotalOutLabel').innerText = t('totalOut');
+            document.getElementById('indicatorInText').innerText = t('indicatorIn');
+            document.getElementById('indicatorOutText').innerText = t('indicatorOut');
+            document.getElementById('searchInput').placeholder = t('searchPlaceholder');
+            document.getElementById('backupBtn').innerText = t('backupBtn');
+            document.getElementById('restoreBtn').innerText = t('restoreBtn');
+            document.getElementById('closeModalBtn').innerText = t('close');
+            document.getElementById('deleteModalBtn').innerText = t('delete');
+            document.getElementById('confirmNoBtn').innerText = t('cancel');
+            document.getElementById('confirmYesBtn').innerText = t('delete');
+            document.getElementById('addAnotherBtn').innerText = t('addAnother');
+            document.getElementById('backToDashboardBtn').innerText = t('back');
+
+            if (userName) {
+                document.getElementById('welcomeMsg').innerHTML = `${t('welcome')} ${escapeHtml(userName)} 💌`;
+            } else {
+                document.getElementById('welcomeMsg').innerHTML = `${t('welcome')} 💌`;
+            }
+        }
+
+        // ==================== SHARE FUNCTION ====================
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({
+                    title: t('simpleCashBook'),
+                    text: t('simpleCashBook'),
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                showToast('📋 Copy link: ' + window.location.href);
+            }
+        }
+
+        function rateUs() {
+            window.open('https://play.google.com/store/apps/details?id=com.android.chrome', '_blank');
+            showToast('⭐ Thank you for rating us!');
+        }
+
+        // ==================== NAVIGATION ====================
+        let navigationStack = [];
+        const viewIds = ['langView', 'nameView', 'dashboardView', 'paymentInView', 'paymentOutView', 'detailsView',
+            'reminderView'
+        ];
+
+        function showView(viewId, addToStack = true) {
+            viewIds.forEach(id => {
+                document.getElementById(id).classList.remove('active-view');
+            });
+            document.getElementById(viewId).classList.add('active-view');
+
+            if (addToStack && navigationStack[navigationStack.length - 1] !== viewId) {
+                navigationStack.push(viewId);
+            }
+
+            const backBtn = document.getElementById('backBtn');
+            const topButtons = document.getElementById('topRightButtons');
+
+            if (viewId === 'dashboardView' || viewId === 'langView' || viewId === 'nameView') {
+                backBtn.style.display = 'none';
+            } else {
+                backBtn.style.display = 'flex';
+            }
+
+            if (viewId === 'dashboardView') {
+                topButtons.style.display = 'flex';
+            } else {
+                topButtons.style.display = 'none';
+            }
+
+            window.history.pushState({ view: viewId }, '', '#');
+
+            // Auto-focus amount input → opens number pad immediately
+            // FIX: clear stale values from last entry before showing fresh form
+            if (viewId === 'paymentInView') {
+                resetEntryForm('in');
+                setTimeout(() => document.getElementById('inAmount')?.focus(), 80);
+            } else if (viewId === 'paymentOutView') {
+                resetEntryForm('out');
+                setTimeout(() => document.getElementById('outAmount')?.focus(), 80);
+            }
+        }
+
+        // ==================== RESET ENTRY FORM ====================
+        // Clears Title/Amount/Reason and resets Date + Mode every time the
+        // Payment In/Out screen is opened, so the previous entry never lingers.
+        function resetEntryForm(prefix) {
+            const nameEl   = document.getElementById(prefix + 'Name');
+            const amtEl    = document.getElementById(prefix + 'Amount');
+            const reasonEl = document.getElementById(prefix + 'Reason');
+            const dateEl   = document.getElementById(prefix + 'Date');
+            const dispEl   = document.getElementById(prefix + 'AmountDisplay');
+            const stickyEl = document.getElementById('save' + (prefix === 'in' ? 'In' : 'Out') + 'BtnAmt');
+            const modeGroup = document.getElementById(prefix + 'ModeGroup');
+
+            if (nameEl)   nameEl.value = '';
+            if (amtEl)    amtEl.value = '';
+            if (reasonEl) reasonEl.value = '';
+            if (dateEl)   dateEl.value = getTodayISO();
+            if (dispEl) { dispEl.textContent = '0'; dispEl.style.opacity = '0.3'; }
+            if (stickyEl) stickyEl.textContent = '₹0.00';
+
+            // Reset mode toggle back to Cash
+            if (modeGroup) {
+                modeGroup.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                const cashBtn = modeGroup.querySelector('.mode-btn[data-mode="Cash"]');
+                if (cashBtn) cashBtn.classList.add('active');
+            }
+            if (prefix === 'in') paymentInMode = 'Cash';
+            else paymentOutMode = 'Cash';
+        }
+
+        function goBack() {
+            if (navigationStack.length > 1) {
+                navigationStack.pop();
+                showView(navigationStack[navigationStack.length - 1], false);
+            } else if (!document.getElementById('dashboardView').classList.contains('active-view')) {
+                showView('dashboardView', false);
+            }
+        }
+
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.view) {
+                showView(event.state.view, false);
+                navigationStack = [event.state.view];
+            } else {
+                goBack();
+            }
+        });
+
+        // ==================== MODE BUTTONS ====================
+        let paymentInMode = 'Cash';
+        let paymentOutMode = 'Cash';
+
+        function initModeButtons(containerId, setterCallback) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const buttons = container.querySelectorAll('.mode-btn');
+            buttons.forEach(btn => {
+                if (btn.dataset.mode === 'Cash') btn.classList.add('active');
+            });
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    setterCallback(btn.dataset.mode);
+                });
+            });
+        }
+
+        initModeButtons('inModeGroup', (mode) => { paymentInMode = mode; });
+        initModeButtons('outModeGroup', (mode) => { paymentOutMode = mode; });
+
+        // ==================== DATE DEFAULTS ====================
+        function setDefaultDates() {
+            const todayISO = getTodayISO();
+            const inDateInput = document.getElementById('inDate');
+            const outDateInput = document.getElementById('outDate');
+
+            if (inDateInput && !inDateInput.value) {
+                inDateInput.value = todayISO;
+            }
+            if (outDateInput && !outDateInput.value) {
+                outDateInput.value = todayISO;
+            }
+        }
+
+        // ==================== TRANSACTION CRUD OPERATIONS ====================
+        function saveTransaction(type, showSuccess = true) {
+            const isPaymentIn = type === 'in';
+
+            const nameInput = document.getElementById(isPaymentIn ? 'inName' : 'outName');
+            const amountInput = document.getElementById(isPaymentIn ? 'inAmount' : 'outAmount');
+            const reasonInput = document.getElementById(isPaymentIn ? 'inReason' : 'outReason');
+            const dateInput = document.getElementById(isPaymentIn ? 'inDate' : 'outDate');
+            const mode = isPaymentIn ? paymentInMode : paymentOutMode;
+
+            const name = nameInput.value.trim();
+            const amountRaw = amountInput.value;
+            const reason = reasonInput.value.trim();
+            const dateISO = dateInput.value;
+
+            if (!name) {
+                showToast(t('nameRequired'));
+                return false;
+            }
+
+            if (!amountRaw || parseFloat(amountRaw) <= 0) {
+                showToast(t('amountPositive'));
+                return false;
+            }
+
+            if (!dateISO) {
+                showToast(t('dateInvalid'));
+                return false;
+            }
+
+            const amount = parseFloat(amountRaw);
+
+            const transaction = {
+                id: Date.now() + '-' + Math.random().toString(36).substring(2, 8),
+                date: dateISO,
+                name: name,
+                amount: amount,
+                reason: reason || '',
+                mode: mode,
+                type: isPaymentIn ? 'Payment In' : 'Payment Out',
+                createdAt: new Date().toISOString()
+            };
+
+            transactions.push(transaction);
+            saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+
+            if (showSuccess) {
+                showSuccessPopup(t('entrySaved'), (action) => {
+                    if (action === 'addAnother') {
+                        if (isPaymentIn) {
+                            document.getElementById('inName').value = '';
+                            document.getElementById('inAmount').value = '';
+                            document.getElementById('inReason').value = '';
+                            document.getElementById('inDate').value = getTodayISO();
+                            document.getElementById('inAmountDisplay').textContent = '0';
+                            document.getElementById('inAmountDisplay').style.opacity = '0.3';
+                            const inAmt = document.getElementById('saveInBtnAmt');
+                            if (inAmt) inAmt.textContent = '₹0.00';
+                            document.getElementById('inName').focus();
+                        } else {
+                            document.getElementById('outName').value = '';
+                            document.getElementById('outAmount').value = '';
+                            document.getElementById('outReason').value = '';
+                            document.getElementById('outDate').value = getTodayISO();
+                            document.getElementById('outAmountDisplay').textContent = '0';
+                            document.getElementById('outAmountDisplay').style.opacity = '0.3';
+                            const outAmt = document.getElementById('saveOutBtnAmt');
+                            if (outAmt) outAmt.textContent = '₹0.00';
+                            document.getElementById('outName').focus();
+                        }
+                    } else {
+                        showView('dashboardView');
+                    }
+                });
+            } else {
+                showToast(`${isPaymentIn ? 'Payment In' : 'Payment Out'} ${t('saved')}`);
+                showView('dashboardView');
+            }
+
+            return true;
+        }
+
+        // ==================== FILTER HELPERS ====================
+        function getCurrentFilterLabel() {
+            if (monthFilterActive) return 'This Month';
+            if (yearFilterActive === 'LAST_MONTH') return 'Last Month';
+            if (yearFilterActive === 'THIS_YEAR') return 'This Year';
+            if (yearFilterActive === 'LAST_YEAR') return 'Last Year';
+            if (activeFilter && activeFilter !== 'ALL') return activeFilter;
+            return null;
+        }
+
+        function updateFilterBadgeV2() {
+            const b = document.getElementById('activeFilterBadge');
+            if (!b) return;
+
+            let txt = '';
+            if (monthFilterActive) txt = '📅 This Month';
+            else if (yearFilterActive === 'LAST_MONTH') txt = '📅 Last Month';
+            else if (yearFilterActive === 'THIS_YEAR') txt = '📅 This Year';
+            else if (yearFilterActive === 'LAST_YEAR') txt = '📅 Last Year';
+            else if (activeFilter && activeFilter !== 'ALL') txt = activeFilter;
+
+            if (!txt) {
+                b.style.display = 'none';
+                return;
+            }
+
+            b.style.display = 'inline-block';
+            b.style.background = '#00D09C';
+            b.style.color = '#fff';
+            b.style.padding = '6px 12px';
+            b.style.borderRadius = '20px';
+            b.innerHTML = txt + ' <span id="removeActiveFilter" style="cursor:pointer">❌</span>';
+
+            const x = document.getElementById('removeActiveFilter');
+            if (x) {
+                x.onclick = function() {
+                    activeFilter = 'ALL';
+                    monthFilterActive = null;
+                    yearFilterActive = null;
+                    renderDetailsView();
+                };
+            }
+        }
+
+        // ==================== DETAILS VIEW RENDERING (UNIFIED) ====================
+        // FIX: Single function handles search + all filters + correct empty state.
+        // Previously the filter logic was monkey-patched as a wrapper that only updated
+        // totals but never filtered the visible transaction list — now both are unified.
+        function renderDetailsView() {
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+
+            // Apply search + all filters in one pass
+            let filtered = transactions.filter(txn => {
+                // Search
+                const matchesSearch =
+                    txn.name.toLowerCase().includes(searchTerm) ||
+                    txn.reason.toLowerCase().includes(searchTerm);
+                if (!matchesSearch) return false;
+
+                // Type / mode filter
+                if (activeFilter === 'Payment In'  && txn.type !== 'Payment In')  return false;
+                if (activeFilter === 'Payment Out' && txn.type !== 'Payment Out') return false;
+                if (activeFilter === 'Cash'        && txn.mode !== 'Cash')        return false;
+                if (activeFilter === 'Online'      && txn.mode !== 'Online')      return false;
+                if (activeFilter && activeFilter.startsWith('DATE:')) {
+                    if (txn.date !== activeFilter.replace('DATE:', '')) return false;
+                }
+
+                // Month / year filter
+                if (monthFilterActive && !String(txn.date || '').startsWith(monthFilterActive)) return false;
+                if (yearFilterActive) {
+                    const now = new Date();
+                    if (yearFilterActive === 'THIS_YEAR') {
+                        if (!String(txn.date || '').startsWith(String(now.getFullYear()))) return false;
+                    }
+                    if (yearFilterActive === 'LAST_YEAR') {
+                        if (!String(txn.date || '').startsWith(String(now.getFullYear() - 1))) return false;
+                    }
+                    if (yearFilterActive === 'LAST_MONTH') {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() - 1);
+                        const ym = d.toISOString().slice(0, 7);
+                        if (!String(txn.date || '').startsWith(ym)) return false;
+                    }
+                }
+                return true;
+            });
+
+            // Totals from filtered set
+            let tin = 0, tout = 0;
+            filtered.forEach(txn => {
+                if (txn.type === 'Payment In') tin += Number(txn.amount || 0);
+                else tout += Number(txn.amount || 0);
+            });
+            const balance = tin - tout;
+
+            document.getElementById('balanceAmount').innerText = formatINR(balance);
+            document.getElementById('totalInSpan').innerHTML   = formatINR(tin);
+            document.getElementById('totalOutSpan').innerHTML  = formatINR(tout);
+            document.getElementById('listTotalIn').innerHTML   = formatINR(tin);
+            document.getElementById('listTotalOut').innerHTML  = formatINR(tout);
+
+            // Update labels based on active filter
+            const label = getCurrentFilterLabel();
+            const balLabel = document.getElementById('availableBalanceLabel');
+            if (label) {
+                if (balLabel) balLabel.textContent = label + ' Balance';
+                document.getElementById('totalInLabel').textContent    = label + ' In';
+                document.getElementById('totalOutLabel').textContent   = label + ' Out';
+                document.getElementById('listTotalInLabel').textContent  = label + ' In';
+                document.getElementById('listTotalOutLabel').textContent = label + ' Out';
+            } else {
+                if (balLabel) balLabel.textContent = t('availableBalance');
+                document.getElementById('totalInLabel').textContent    = t('totalIn');
+                document.getElementById('totalOutLabel').textContent   = t('totalOut');
+                document.getElementById('listTotalInLabel').textContent  = t('totalIn');
+                document.getElementById('listTotalOutLabel').textContent = t('totalOut');
+            }
+
+            // Render transaction list
+            filtered.sort((a, b) => {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() :
+                    (a.id ? parseInt(String(a.id).split('-')[0]) : 0);
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() :
+                    (b.id ? parseInt(String(b.id).split('-')[0]) : 0);
+                return bTime - aTime;
+            });
+
+            const container = document.getElementById('txnList');
+
+            if (filtered.length === 0) {
+                // FIX: distinguish "no transactions at all" vs "filter has no results"
+                const emptyMsg = (transactions.length === 0 && !searchTerm)
+                    ? `✨ ${t('noTransactions')}`
+                    : `📭 ${t('noMatches')}`;
+                container.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+                updateFilterBadgeV2();
+                return;
+            }
+
+            let html = '';
+            for (const transaction of filtered) {
+                const amountClass = transaction.type === 'Payment In' ? 'in' : 'out';
+                const typeClass   = transaction.type === 'Payment In' ? 'txn-in' : 'txn-out';
+                const sign = transaction.type === 'Payment In' ? '+' : '−';
+                const displayDate = isoToDisplay(transaction.date);
+                html += `
+                <div class="txn-item ${typeClass}" data-id="${transaction.id}">
+                  <div>
+                    <div class="txn-name">${escapeHtml(transaction.name)}</div>
+                    <div class="txn-meta">
+                      <span>📅 ${displayDate}</span>
+                      <span>💳 ${transaction.mode}</span>
+                    </div>
+                  </div>
+                  <div class="txn-amount ${amountClass}">
+                    ${sign} ${formatINR(transaction.amount)}
+                  </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+
+            document.querySelectorAll('.txn-item').forEach(element => {
+                element.addEventListener('click', () => {
+                    const transactionId = element.getAttribute('data-id');
+                    const transaction = transactions.find(t => t.id === transactionId);
+                    if (transaction) showTransactionModal(transaction);
+                });
+            });
+
+            updateFilterBadgeV2();
+        }
+
+        // ==================== TRANSACTION DETAILS MODAL ====================
+        function showTransactionModal(transaction) {
+            const modal = document.getElementById('transactionModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+            const displayDate = isoToDisplay(transaction.date);
+            const isIn = transaction.type === 'Payment In';
+            const icon = isIn ? '💰' : '💸';
+            const amtColor = isIn ? 'var(--green-deep)' : 'var(--coral-deep)';
+            const sign = isIn ? '+' : '−';
+
+            modalTitle.innerHTML = icon + ' ' + escapeHtml(transaction.name);
+
+            modalContent.innerHTML = `
+                <div style="border-top:1px solid #eee;margin:12px 0 16px"></div>
+                <div style="display:flex;justify-content:center;gap:18px;font-weight:600;margin-bottom:18px">
+                  <span>📅 ${displayDate}</span>
+                  <span>💳 ${transaction.mode}</span>
+                </div>
+                <div style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:28px;color:${amtColor};margin-bottom:18px">
+                  ${sign} ${formatINR(transaction.amount)}
+                </div>
+                <div style="background:#f7f7f7;padding:14px;border-radius:16px;text-align:left">
+                  <div style="font-weight:700;margin-bottom:8px">💬 ${t('reason')}</div>
+                  <div>${transaction.reason ? escapeHtml(transaction.reason) : '—'}</div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+            const closeModal = () => {
+                modal.style.display = 'none';
+            };
+            document.getElementById('closeModalBtn').onclick = closeModal;
+
+            document.getElementById('deleteModalBtn').onclick = async () => {
+                const confirmed = await customConfirm(t('deleteConfirm'));
+                if (confirmed) {
+                    transactions = transactions.filter(t => t.id !== transaction.id);
+                    saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+                    showMiniCard(t('deleted'));
+                    closeModal();
+                    if (document.getElementById('detailsView').classList.contains('active-view')) {
+                        renderDetailsView();
+                    }
+                }
+            };
+        }
+
+        // ==================== EXPORT / IMPORT / BACKUP / RESTORE ====================
+        function exportTransactions() {
+            const dataStr = JSON.stringify(transactions, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `cashbook_export_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast(t('exportSuccess'));
+        }
+
+        function importTransactions() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const text = await file.text();
+                try {
+                    const importedData = JSON.parse(text);
+                    if (Array.isArray(importedData) && importedData.every(t => t.id && t.amount && t.type)) {
+                        const confirmed = await customConfirm(t('importReplace'));
+                        if (confirmed) {
+                            transactions = importedData;
+                            saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+                            showToast(t('importSuccess'));
+                            if (document.getElementById('detailsView').classList.contains('active-view')) {
+                                renderDetailsView();
+                            }
+                        }
+                    } else {
+                        throw new Error();
+                    }
+                } catch (error) {
+                    showToast(t('invalidJSON'));
+                }
+            };
+            input.click();
+        }
+
+        // ==================== FIXED BACKUP WITH SHARE ====================
+        async function backupAllData() {
+            // Prepare backup data
+            const backupData = {
+                userName: userName,
+                transactions: transactions,
+                reminders: reminders || [],
+                backupDate: new Date().toISOString().slice(0, 10),
+                version: 2
+            };
+            const json = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const fileName = `CashBook_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            const file = new File([blob], fileName, { type: 'application/json' });
+
+            // 1. Try to share via native share sheet
+            try {
+                // Check if sharing files is supported
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Cash Book Backup',
+                        text: 'Cash Book Backup File',
+                        files: [file]
+                    });
+                    showToast('✅ Backup shared successfully');
+                    return; // success – exit
+                } else {
+                    // canShare returned false → not supported
+                    console.warn('File sharing not supported by this browser');
+                }
+            } catch (err) {
+                // User cancelled or share failed – fall through to download
+                console.warn('Share failed:', err);
+            }
+
+            // 2. Fallback: download the file
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('📥 Backup downloaded');
+        }
+
+        async function restoreBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const text = await file.text();
+                try {
+                    const backupData = JSON.parse(text);
+                    if (!backupData.transactions || !Array.isArray(backupData.transactions)) {
+                        throw new Error();
+                    }
+                    const confirmed = await customConfirm(t('restoreMerge'));
+                    if (confirmed) {
+                        const existingIds = new Set(transactions.map(t => t.id));
+                        let addedCount = 0;
+                        for (const transaction of backupData.transactions) {
+                            if (transaction.id && transaction.amount && transaction.type && !existingIds.has(transaction
+                                    .id)) {
+                                transactions.push(transaction);
+                                addedCount++;
+                            }
+                        }
+                        // FIX: restore reminders (merge, no duplicates)
+                        if (backupData.reminders && Array.isArray(backupData.reminders)) {
+                            const existingReminderIds = new Set(reminders.map(r => r.id));
+                            for (const reminder of backupData.reminders) {
+                                if (reminder.id && !existingReminderIds.has(reminder.id)) {
+                                    reminders.push(reminder);
+                                }
+                            }
+                            saveReminders();
+                            scheduleAllPendingReminders();
+                        }
+                        if (backupData.userName && !userName) {
+                            userName = backupData.userName;
+                            localStorage.setItem('cashbook_userName', userName);
+                            updateUILanguage();
+                        }
+                        saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+                        showToast(`${t('restored')}: ${addedCount} new ${t('transactions')}`);
+                        if (document.getElementById('detailsView').classList.contains('active-view')) {
+                            renderDetailsView();
+                        }
+                    }
+                } catch (error) {
+                    showToast(t('invalidBackup'));
+                }
+            };
+            input.click();
+        }
+
+        // ==================== NOTIFICATION PERMISSION ====================
+        async function requestNotifPermission() {
+            if (!('Notification' in window)) {
+                showToast('❌ Notifications not supported');
+                return false;
+            }
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') {
+                showToast('🔕 Notifications blocked. Please enable from browser settings.');
+                return false;
+            }
+            try {
+                const result = await Notification.requestPermission();
+                return result === 'granted';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // ==================== NOTIFICATION BANNER ====================
+        function showNotificationBanner() {
+            const banner = document.getElementById('notifPermBanner');
+            const overlay = document.getElementById('notifOverlay');
+            banner.style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function hideNotificationBanner() {
+            const banner = document.getElementById('notifPermBanner');
+            const overlay = document.getElementById('notifOverlay');
+            banner.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        // ==================== REMINDER CORE ====================
+        let reminders = JSON.parse(localStorage.getItem('cashbook_reminders') || '[]');
+        let reminderFilter = 'today',
+            selectedReminderId = null;
+        const _notifTimers = {};
+
+        function saveReminders() {
+            localStorage.setItem('cashbook_reminders', JSON.stringify(reminders));
+        }
+
+        function isExpired(r) {
+            return new Date(r.date + 'T' + r.time) < new Date();
+        }
+
+        function formatReminderTime(timeStr) {
+            if (!timeStr) return '';
+            const [h, m] = timeStr.split(':');
+            let hh = parseInt(h, 10);
+            const ap = hh >= 12 ? 'PM' : 'AM';
+            hh = hh % 12 || 12;
+            return String(hh).padStart(2, '0') + ':' + m + ' ' + ap;
+        }
+
+        // ==================== REMINDER DATE-RANGE FILTER ====================
+        // Returns true if reminder r.date falls within the selected filter window.
+        function matchesReminderFilter(r, filter) {
+            if (filter === 'all') return true;
+
+            // Parse r.date (YYYY-MM-DD) as a local midnight date for comparison
+            const [ry, rm, rd] = r.date.split('-').map(Number);
+            const rDate = new Date(ry, rm - 1, rd);
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            if (filter === 'today') {
+                return rDate.getTime() === today.getTime();
+            }
+            if (filter === 'tomorrow') {
+                const tmrw = new Date(today);
+                tmrw.setDate(tmrw.getDate() + 1);
+                return rDate.getTime() === tmrw.getTime();
+            }
+            if (filter === 'week') {
+                // Current calendar week: Sunday → Saturday
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                return rDate >= weekStart && rDate <= weekEnd;
+            }
+            if (filter === 'month') {
+                return rDate.getFullYear() === today.getFullYear() && rDate.getMonth() === today.getMonth();
+            }
+            return true;
+        }
+
+        function renderReminders() {
+            try {
+                reminders.sort((a, b) => {
+                    const ad = new Date(a.date + 'T' + a.time);
+                    const bd = new Date(b.date + 'T' + b.time);
+                    if (reminderFilter === 'all') {
+                        const now = new Date();
+                        const aExpired = ad < now;
+                        const bExpired = bd < now;
+                        if (aExpired !== bExpired) return aExpired ? 1 : -1;
+                        if (!aExpired && !bExpired) return ad - bd;
+                        return bd - ad;
+                    }
+                    // For day/week/month filters: simple chronological order
+                    return ad - bd;
+                });
+            } catch (_) {}
+
+            const list = document.getElementById('reminderList');
+            if (!list) return;
+            const arr = reminders.filter(r => matchesReminderFilter(r, reminderFilter));
+
+            if (!arr.length) {
+                const emptyMsgMap = {
+                    today: '📭 No reminders today',
+                    tomorrow: '📭 No reminders tomorrow',
+                    week: '📭 No reminders this week',
+                    month: '📭 No reminders this month',
+                    all: '✨ No reminders yet'
+                };
+                list.innerHTML = `<div class="empty-state">${emptyMsgMap[reminderFilter] || '📭 No reminders'}</div>`;
+                return;
+            }
+            list.innerHTML = arr.map(r => `
+                <div class="txn-item" data-rid="${r.id}">
+                  <div>
+                    <div class="txn-name">${escapeHtml(r.title)}</div>
+                    <div class="txn-meta">
+                      <span>📅 ${isoToDisplay(r.date)}</span>
+                      <span>⏰ ${formatReminderTime(r.time)}</span>
+                      <span class="status-pill ${isExpired(r) ? 'expired' : 'active'}">${isExpired(r) ? 'Expired' : 'Active'}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('');
+
+            document.querySelectorAll('[data-rid]').forEach(el => {
+                el.onclick = () => showReminderDetail(el.dataset.rid);
+            });
+        }
+
+        // ===== GLOBAL showReminderDetail (accessible from SW message) =====
+        function showReminderDetail(id) {
+            const r = reminders.find(x => x.id == id);
+            if (!r) return;
+            selectedReminderId = id;
+            document.getElementById('remDetailTitle').innerHTML = '⏰ ' + escapeHtml(r.title);
+            document.getElementById('remDetailBody').innerHTML = `
+                <div style="border-top:1px solid #eee;margin:12px 0 16px"></div>
+                <div style="display:flex;justify-content:center;gap:18px;font-weight:600;margin-bottom:18px">
+                  <span>📅 ${isoToDisplay(r.date)}</span>
+                  <span>⏰ ${formatReminderTime(r.time)}</span>
+                </div>
+                <div style="background:#f7f7f7;padding:14px;border-radius:16px;text-align:left">
+                  <div style="font-weight:700;margin-bottom:8px">📝 Details</div>
+                  <div>${escapeHtml(r.details) || '—'}</div>
+                </div>
+              `;
+            document.getElementById('reminderDetailModal').style.display = 'flex';
+        }
+
+        // ===== UPDATED scheduleNotification with Service Worker messaging =====
+        async function scheduleNotification(r) {
+          if (isExpired(r)) return;
+          const granted = await requestNotifPermission();
+          if (!granted) return;
+
+          const delay = new Date(r.date + 'T' + r.time).getTime() - Date.now();
+          if (delay <= 0) return;
+
+          // FIX: setTimeout max is ~24.8 days (2^31-1 ms); longer reminders silently fail
+          // We skip scheduling now; scheduleAllPendingReminders runs on each app open
+          if (delay > 2147483647) return;
+
+          if (_notifTimers[r.id]) clearTimeout(_notifTimers[r.id]);
+
+          _notifTimers[r.id] = setTimeout(async () => {
+            try {
+              // Try to get service worker registration
+              const registration = await navigator.serviceWorker.ready;
+              // Show notification via Service Worker (works in background)
+              registration.showNotification('⏰ ' + r.title, {
+                body: r.details || 'Cash Book Reminder',
+                icon: './icon-192.png',
+                badge: './icon-192.png',
+                tag: 'reminder-' + r.id,
+                requireInteraction: true,
+                data: { reminderId: r.id }  // FIX: SW needs this to open specific reminder
+              });
+            } catch (swError) {
+              // Fallback: direct notification (works when app is open)
+              if (Notification.permission === 'granted') {
+                new Notification('⏰ ' + r.title, {
+                  body: r.details || 'Cash Book Reminder',
+                  icon: './icon-192.png',
+                  tag: 'reminder-' + r.id,
+                });
+              }
+            }
+          }, delay);
+        }
+
+
+        function scheduleAllPendingReminders() {
+            // FIX: only schedule if permission already granted — never auto-prompt on app load
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            reminders.forEach(r => { if (!isExpired(r)) scheduleNotification(r); });
+        }
+
+        // ============================================
+        // SERVICE WORKER MESSAGE HANDLER
+        // ============================================
+        if (navigator.serviceWorker) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                const data = event.data;
+                if (data && data.type === 'OPEN_REMINDER') {
+                    const reminderId = data.payload.reminderId;
+                    // Navigate to reminder view first
+                    showView('reminderView');
+                    // Then find and show the specific reminder
+                    setTimeout(() => {
+                        const reminder = reminders.find(r => r.id === reminderId);
+                        if (reminder) {
+                            showReminderDetail(reminderId);
+                        } else {
+                            renderReminders();
+                        }
+                    }, 300);
+                }
+            });
+        }
+
+        // ============================================
+        // URL PARAMETER HANDLER (for fresh opens)
+        // ============================================
+
+function handleURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  const reminderId = params.get('reminder');
+  if (reminderId) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setTimeout(() => {
+      showView('reminderView');
+      setTimeout(() => {
+        const reminder = reminders.find(r => r.id === reminderId);
+        if (reminder) {
+          showReminderDetail(reminderId);
+        } else {
+          renderReminders();
+        }
+      }, 300);
+    }, 100);
+  }
+}
+        // ==================== EVENT LISTENERS ====================
+        document.getElementById('continueBtn')?.addEventListener('click', () => {
+            const name = document.getElementById('userName').value.trim();
+            if (!name) {
+                showToast(t('nameRequired'));
+                return;
+            }
+            userName = name;
+            saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+            updateUILanguage();
+            showView('dashboardView');
+        });
+
+        document.getElementById('seeDetailsBtn')?.addEventListener('click', () => {
+            renderDetailsView();
+            showView('detailsView');
+        });
+
+        document.getElementById('paymentInBtn')?.addEventListener('click', () => {
+            setDefaultDates();
+            showView('paymentInView');
+            document.getElementById('inName')?.focus();
+        });
+
+        document.getElementById('paymentOutBtn')?.addEventListener('click', () => {
+            setDefaultDates();
+            showView('paymentOutView');
+            document.getElementById('outName')?.focus();
+        });
+
+        document.getElementById('saveInBtn')?.addEventListener('click', () => saveTransaction('in', true));
+        document.getElementById('saveOutBtn')?.addEventListener('click', () => saveTransaction('out', true));
+        document.getElementById('backBtn')?.addEventListener('click', goBack);
+        document.getElementById('searchInput')?.addEventListener('input', () => renderDetailsView());
+        document.getElementById('backupBtn')?.addEventListener('click', backupAllData);
+        document.getElementById('restoreBtn')?.addEventListener('click', restoreBackup);
+        document.getElementById('shareBtn')?.addEventListener('click', shareApp);
+        document.getElementById('rateUsBtn')?.addEventListener('click', rateUs);
+        document.getElementById('langTopBtn')?.addEventListener('click', () => {
+            showView('langView');
+        });
+
+        document.querySelectorAll('.lang-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedLang = button.getAttribute('data-lang');
+                currentLanguage = selectedLang;
+                localStorage.setItem('cashbook_language', currentLanguage);
+                updateUILanguage();
+                if (!userName) {
+                    showView('nameView');
+                } else {
+                    showView('dashboardView');
+                }
+            });
+        });
+
+        window.onclick = (event) => {
+            const modal = document.getElementById('transactionModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // ==================== REMINDER BUTTON HANDLER (with permission banner) ====================
+        document.getElementById('reminderBtn')?.addEventListener('click', async () => {
+            const perm = 'Notification' in window ? Notification.permission : 'default';
+
+            if (perm === 'granted') {
+                renderReminders();
+                showView('reminderView');
+                return;
+            }
+
+            if (perm === 'denied') {
+                showToast('🔕 Notifications are blocked. Please enable from browser settings.');
+                renderReminders();
+                showView('reminderView');
+                return;
+            }
+
+            showNotificationBanner();
+        });
+
+        // ==================== NOTIFICATION BANNER BUTTONS ====================
+        document.getElementById('notifYesBtn')?.addEventListener('click', async () => {
+            hideNotificationBanner();
+            const granted = await requestNotifPermission();
+            if (granted) {
+                showToast('✅ Notifications enabled!');
+                scheduleAllPendingReminders();
+            } else {
+                showToast('⚠️ Notification permission not granted.');
+            }
+            renderReminders();
+            showView('reminderView');
+        });
+
+        document.getElementById('notifNoBtn')?.addEventListener('click', () => {
+            hideNotificationBanner();
+            showToast('ℹ️ You can enable notifications later from settings.');
+            renderReminders();
+            showView('reminderView');
+        });
+
+        // ==================== REMINDER ADD / EDIT / DELETE ====================
+        document.getElementById('addReminderOpenBtn')?.addEventListener('click', () => {
+            document.getElementById('reminderModal').style.display = 'flex';
+        });
+
+        document.getElementById('cancelReminderBtn')?.addEventListener('click', () => {
+            document.getElementById('reminderModal').style.display = 'none';
+        });
+
+        document.getElementById('saveReminderBtn')?.addEventListener('click', () => {
+            const err = document.getElementById('reminderError');
+            const title = document.getElementById('remTitle');
+            const date = document.getElementById('remDate');
+            const time = document.getElementById('remTime');
+            const details = document.getElementById('remDetails');
+
+            err.style.display = 'none';
+            if (!title.value.trim()) { err.innerText = 'Please enter a title';
+                err.style.display = 'block'; return; }
+            if (!date.value) { err.innerText = 'Please select a date';
+                err.style.display = 'block'; return; }
+            if (!time.value) { err.innerText = 'Please select a time';
+                err.style.display = 'block'; return; }
+            // FIX: validate that reminder is set in the future
+            if (new Date(date.value + 'T' + time.value) <= new Date()) {
+                err.innerText = 'Please select a future date and time';
+                err.style.display = 'block'; return;
+            }
+
+            const newReminder = {
+                id: Date.now() + '',
+                title: title.value.trim(),
+                date: date.value,
+                time: time.value,
+                details: details.value.trim()
+            };
+
+            reminders.push(newReminder);
+            saveReminders();
+            scheduleNotification(newReminder);
+
+            document.getElementById('reminderModal').style.display = 'none';
+            title.value = '';
+            date.value = '';
+            time.value = '';
+            details.value = '';
+            showToast('Reminder Saved ✅');
+            renderReminders();
+        });
+
+        document.querySelectorAll('.rfchip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.rfchip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                reminderFilter = chip.dataset.filter;
+                renderReminders();
+            });
+        });
+
+        document.getElementById('closeReminderDetail')?.addEventListener('click', () => {
+            document.getElementById('reminderDetailModal').style.display = 'none';
+        });
+
+        document.getElementById('deleteReminderBtn')?.addEventListener('click', () => {
+            if (_notifTimers[selectedReminderId]) {
+                clearTimeout(_notifTimers[selectedReminderId]);
+                delete _notifTimers[selectedReminderId];
+            }
+            reminders = reminders.filter(r => r.id !== selectedReminderId);
+            saveReminders();
+            document.getElementById('reminderDetailModal').style.display = 'none';
+            showToast('Reminder Deleted');
+            renderReminders();
+        });
+
+        // ==================== DARK MODE ====================
+        const darkEnabled = localStorage.getItem('cashbook_darkmode') === '1';
+
+        function updateDarkButton() {
+            const btn = document.getElementById('darkModeBtn');
+            if (!btn) return;
+            btn.innerHTML = document.body.classList.contains('dark-mode') ?
+                '☀️ Light' :
+                '🌙 Dark';
+        }
+
+        if (darkEnabled) {
+            document.body.classList.add('dark-mode');
+        }
+        setTimeout(updateDarkButton, 100);
+
+        document.getElementById('darkModeBtn')?.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem(
+                'cashbook_darkmode',
+                document.body.classList.contains('dark-mode') ? '1' : '0'
+            );
+            updateDarkButton();
+        });
+
+        document.querySelectorAll('.fbtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const f = btn.dataset.filter;
+                activeFilter = 'ALL';
+                monthFilterActive = null;
+                yearFilterActive = null;
+
+                if (f === 'THIS_MONTH') {
+                    monthFilterActive = getTodayISO().slice(0, 7);
+                } else if (f === 'LAST_MONTH') {
+                    yearFilterActive = 'LAST_MONTH';
+                } else if (f === 'THIS_YEAR') {
+                    yearFilterActive = 'THIS_YEAR';
+                } else if (f === 'LAST_YEAR') {
+                    yearFilterActive = 'LAST_YEAR';
+                } else {
+                    activeFilter = f;
+                }
+
+                document.getElementById('filterModal').style.display = 'none';
+                renderDetailsView();
+            });
+        });
+
+        document.getElementById('clearFilterBtn').onclick = function() {
+            activeFilter = 'ALL';
+            monthFilterActive = null;
+            yearFilterActive = null;
+            document.getElementById('filterModal').style.display = 'none';
+            renderDetailsView();
+        };
+
+        document.getElementById('applyDateBtn').onclick = function() {
+            monthFilterActive = null;
+            yearFilterActive = null;
+            const d = document.getElementById('filterDate').value;
+            if (d) activeFilter = 'DATE:' + d;
+            document.getElementById('filterModal').style.display = 'none';
+            renderDetailsView();
+        };
+
+        document.getElementById('filterBtn').onclick = () => {
+            document.getElementById('filterModal').style.display = 'flex';
+        };
+
+        // ==================== EDIT NAME ====================
+        document.getElementById('editNameBtn').onclick = () => {
+            document.getElementById('editNameInput').value = userName || '';
+            document.getElementById('editNameModal').style.display = 'flex';
+        };
+
+        document.getElementById('closeNameBtn').onclick = () => {
+            document.getElementById('editNameModal').style.display = 'none';
+        };
+
+        document.getElementById('saveNameBtn').onclick = () => {
+            const v = document.getElementById('editNameInput').value.trim();
+            if (v) {
+                userName = v;
+                saveAllData();
+            if(typeof updateDashboardHero==='function'){updateDashboardHero();}
+                updateUILanguage();
+            }
+            document.getElementById('editNameModal').style.display = 'none';
+        };
+
+        // ==================== SERVICE WORKER ====================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(() => console.log('Service Worker Registered'))
+                    .catch(err => console.log(err));
+            });
+        }
+
+        // ==================== AMOUNT SCREEN (GHOST INPUT EDITION) ====================
+        // Ghost input is invisible, fills the dark zone — tap = keyboard.
+        // Display span shows the formatted amount. Sticky bar also updates live.
+        function setupAmountScreens() {
+            ['in', 'out'].forEach(prefix => {
+                const input  = document.getElementById(prefix + 'Amount');
+                const disp   = document.getElementById(prefix + 'AmountDisplay');
+                const screen = document.getElementById(prefix + 'AmountScreen'); // entry-top div
+                const stickyAmt = document.getElementById('save' + (prefix === 'in' ? 'In' : 'Out') + 'BtnAmt');
+                if (!input || !disp || !screen) return;
+
+                const fmt = (v) => {
+                    if (!v || isNaN(v)) return '';
+                    const n = parseFloat(v);
+                    const parts = n.toFixed(2).split('.');
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    return parts.join('.');
+                };
+
+                // Big display: show exactly what user typed (no forced .00) —
+                // only here, sticky bar + everywhere else keeps 2-decimal currency format.
+                const fmtBig = (v) => {
+                    if (!v) return '';
+                    const parts = String(v).split('.');
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    return parts.join('.');
+                };
+
+                input.addEventListener('input', () => {
+                    const bigText  = fmtBig(input.value);
+                    const formatted = fmt(input.value);
+                    if (bigText === '') {
+                        disp.textContent = '0';
+                        disp.style.opacity = '0.3';
+                    } else {
+                        disp.textContent = bigText;
+                        disp.style.opacity = '1';
+                    }
+                    if (stickyAmt) stickyAmt.textContent = '₹' + (formatted || '0.00');
+                });
+                input.addEventListener('focus', () => screen.classList.add('as-focused'));
+                input.addEventListener('blur',  () => screen.classList.remove('as-focused'));
+                // Clicking anywhere on the dark zone focuses the ghost input
+                screen.addEventListener('click', () => input.focus());
+            });
+        }
+
+        // ==================== QUICK AMOUNT CHIPS ====================
+        function setupQuickChips() {
+            const fmtSticky = (v) => {
+                const n = parseFloat(v);
+                const parts = n.toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return parts.join('.');
+            };
+            const fmtBig = (v) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            document.querySelectorAll('.qchip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    e.stopPropagation(); // prevent bubbling to screen click
+                    const prefix = chip.dataset.for;
+                    const amt = chip.dataset.amt;
+                    const input = document.getElementById(prefix + 'Amount');
+                    const disp  = document.getElementById(prefix + 'AmountDisplay');
+                    const stickyAmt = document.getElementById('save' + (prefix === 'in' ? 'In' : 'Out') + 'BtnAmt');
+                    if (input) {
+                        input.value = amt; // store the clean whole number (e.g. "500")
+                        if (disp) { disp.textContent = fmtBig(amt); disp.style.opacity = '1'; }
+                        if (stickyAmt) stickyAmt.textContent = '₹' + fmtSticky(amt);
+                        input.focus();
+                    }
+                    // Bounce feedback
+                    chip.style.transform = 'scale(0.84)';
+                    setTimeout(() => chip.style.transform = '', 160);
+                });
+            });
+        }
+
+
+
+        // ==================== DASHBOARD HERO UPDATE ====================
+        function updateDashboardHero() {
+            // Date
+            const dateEl = document.getElementById('heroDashDate');
+            if (dateEl) {
+                const now = new Date();
+                dateEl.textContent = now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+            }
+            // Balance from transactions
+            let tin = 0, tout = 0;
+            transactions.forEach(txn => {
+                if (txn.type === 'Payment In') tin += Number(txn.amount || 0);
+                else tout += Number(txn.amount || 0);
+            });
+            const fmt = (v) => {
+                const parts = v.toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return '₹' + parts.join('.');
+            };
+            const balEl = document.getElementById('dashBalance');
+            const inEl  = document.getElementById('dashTotalIn');
+            const outEl = document.getElementById('dashTotalOut');
+            if (balEl) balEl.textContent = fmt(tin - tout);
+            if (inEl)  inEl.textContent  = fmt(tin);
+            if (outEl) outEl.textContent = fmt(tout);
+        }
+
+        // ==================== APP INITIALIZATION ====================
+        function initApp() {
+            const savedLanguage = localStorage.getItem('cashbook_language');
+            if (savedLanguage && translations[savedLanguage]) {
+                currentLanguage = savedLanguage;
+            } else {
+                currentLanguage = 'en';
+            }
+
+            updateUILanguage();
+            setDefaultDates();
+            setupAmountScreens();     // Wire up amount calculator screens (ghost input)
+            setupQuickChips();        // Quick amount preset chips (₹100, ₹500...)
+            updateDashboardHero();    // Show balance + date in hero card
+
+            // Schedule all pending reminders (but don't auto-request permission)
+            scheduleAllPendingReminders();
+
+            // Handle URL params (for notification click when app was closed)
+            handleURLParams();
+
+            if (userName) {
+                showView('dashboardView');
+                navigationStack = ['dashboardView'];
+            } else {
+                showView('langView');
+                navigationStack = ['langView'];
+            }
+        }
+
+        initApp();
+
+    </script>
+</body>
+</html>
