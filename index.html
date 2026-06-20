@@ -1251,7 +1251,7 @@ body.dark-mode .rmd-title { color: var(--ink); }
     <script>
         /* ============================================
            SIMPLE CASH BOOK - COMPLETE PWA
-           Version: 5.2 | Notification Click → Specific Reminder
+           Version: 6.0 | Fixed Backup with Share
            ============================================ */
 
         // ==================== DATA STORAGE ====================
@@ -2105,58 +2105,55 @@ body.dark-mode .rmd-title { color: var(--ink); }
             input.click();
         }
 
+        // ==================== FIXED BACKUP WITH SHARE ====================
         async function backupAllData() {
-
+            // Prepare backup data
             const backupData = {
                 userName: userName,
                 transactions: transactions,
-                reminders: reminders,
+                reminders: reminders || [],
                 backupDate: new Date().toISOString().slice(0, 10),
                 version: 2
             };
-
             const json = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const fileName = `CashBook_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            const file = new File([blob], fileName, { type: 'application/json' });
 
-            const blob = new Blob([json], {
-                type: 'application/json'
-            });
+            // 1. ALWAYS download the file first
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('📥 Backup downloaded');
 
-            const file = new File(
-                [blob],
-                `CashBook_Backup_${new Date().toISOString().slice(0,10)}.json`,
-                {
-                    type: 'application/json'
-                }
-            );
-
+            // 2. THEN trigger the native share sheet for the same file (best-effort)
+            // FIX: previously this ran as an either/or fallback BEFORE the download,
+            // so share only fired when download never happened. Now both always run,
+            // in the order requested — download completes, then share triggers.
             try {
-
-                if (
-                    navigator.canShare &&
-                    navigator.canShare({ files: [file] })
-                ) {
-
+                if (!window.isSecureContext) {
+                    // Web Share API only works over HTTPS (or localhost). Testing the file
+                    // directly from Downloads (content:// / file://) is NOT a secure context,
+                    // so share will silently be unavailable here — this is expected.
+                    // Once hosted on your real HTTPS domain / installed as TWA, it will work.
+                    console.warn('Not a secure context (content:// or file://) — Web Share API unavailable here. Will work once hosted over HTTPS.');
+                }
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: 'Cash Book Backup',
                         text: 'Cash Book Backup File',
                         files: [file]
                     });
-
-                    showToast('Backup shared successfully');
-                    return;
+                } else {
+                    console.warn('File sharing not supported by this browser — download-only.');
                 }
-
             } catch (err) {
-                console.log(err);
+                // User cancelled the share sheet, or share isn't available — that's fine,
+                // the backup file is already safely downloaded above.
+                console.warn('Share step skipped/cancelled:', err);
             }
-
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = file.name;
-            a.click();
-            URL.revokeObjectURL(a.href);
-
-            showToast(t('backupCreated'));
         }
 
         async function restoreBackup() {
@@ -2377,45 +2374,45 @@ body.dark-mode .rmd-title { color: var(--ink); }
 
         // ===== UPDATED scheduleNotification with Service Worker messaging =====
         async function scheduleNotification(r) {
-  if (isExpired(r)) return;
-  const granted = await requestNotifPermission();
-  if (!granted) return;
+          if (isExpired(r)) return;
+          const granted = await requestNotifPermission();
+          if (!granted) return;
 
-  const delay = new Date(r.date + 'T' + r.time).getTime() - Date.now();
-  if (delay <= 0) return;
+          const delay = new Date(r.date + 'T' + r.time).getTime() - Date.now();
+          if (delay <= 0) return;
 
-  // FIX: setTimeout max is ~24.8 days (2^31-1 ms); longer reminders silently fail
-  // We skip scheduling now; scheduleAllPendingReminders runs on each app open
-  if (delay > 2147483647) return;
+          // FIX: setTimeout max is ~24.8 days (2^31-1 ms); longer reminders silently fail
+          // We skip scheduling now; scheduleAllPendingReminders runs on each app open
+          if (delay > 2147483647) return;
 
-  if (_notifTimers[r.id]) clearTimeout(_notifTimers[r.id]);
+          if (_notifTimers[r.id]) clearTimeout(_notifTimers[r.id]);
 
-  _notifTimers[r.id] = setTimeout(async () => {
-    try {
-      // Try to get service worker registration
-      const registration = await navigator.serviceWorker.ready;
-      // Show notification via Service Worker (works in background)
-      registration.showNotification('⏰ ' + r.title, {
-        body: r.details || 'Cash Book Reminder',
-        icon: './icon-192.png',
-        badge: './icon-192.png',
-        tag: 'reminder-' + r.id,
-        requireInteraction: true,
-        data: { reminderId: r.id }  // FIX: SW needs this to open specific reminder
-      });
-    } catch (swError) {
-      // Fallback: direct notification (works when app is open)
-      if (Notification.permission === 'granted') {
-        new Notification('⏰ ' + r.title, {
-          body: r.details || 'Cash Book Reminder',
-          icon: './icon-192.png',
-          tag: 'reminder-' + r.id,
-        });
-      }
-    }
-  }, delay);
-}
-        
+          _notifTimers[r.id] = setTimeout(async () => {
+            try {
+              // Try to get service worker registration
+              const registration = await navigator.serviceWorker.ready;
+              // Show notification via Service Worker (works in background)
+              registration.showNotification('⏰ ' + r.title, {
+                body: r.details || 'Cash Book Reminder',
+                icon: './icon-192.png',
+                badge: './icon-192.png',
+                tag: 'reminder-' + r.id,
+                requireInteraction: true,
+                data: { reminderId: r.id }  // FIX: SW needs this to open specific reminder
+              });
+            } catch (swError) {
+              // Fallback: direct notification (works when app is open)
+              if (Notification.permission === 'granted') {
+                new Notification('⏰ ' + r.title, {
+                  body: r.details || 'Cash Book Reminder',
+                  icon: './icon-192.png',
+                  tag: 'reminder-' + r.id,
+                });
+              }
+            }
+          }, delay);
+        }
+
 
         function scheduleAllPendingReminders() {
             // FIX: only schedule if permission already granted — never auto-prompt on app load
@@ -2449,7 +2446,7 @@ body.dark-mode .rmd-title { color: var(--ink); }
         // ============================================
         // URL PARAMETER HANDLER (for fresh opens)
         // ============================================
-        
+
 function handleURLParams() {
   const params = new URLSearchParams(window.location.search);
   const reminderId = params.get('reminder');
